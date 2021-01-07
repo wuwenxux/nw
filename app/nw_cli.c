@@ -1,7 +1,6 @@
 
 #include "nw_cli.h"
 #include "utils.h"
-#define NW_CLI_BUFSIZE 512
 #define K  1024
 #define M 1024*1024
 #define CMDERR -2
@@ -10,241 +9,44 @@ int nw_peer_usage(void);
 int nw_other_usage(void);
 
 /*nw other*/
-static int nw_other_maxbufflen(int argc, char **argv);
-static int nw_other_queuelen(int argc, char **argv);
-static int nw_other_oneclient(int argc, char *argv);
-static int nw_other_batch(int argc, char **argv);
-static int nw_other_idletime(int argc, char **argv);
-static int nw_other_log(int argc, char **argv);
-static int nw_other_show(int argc, char **argv);
-static int nw_search_if(char *);
-int nw_peer_usage(void)
-{
-	/*nw_peer_usage*/
-	printf("nw set  { DEVICE | dev DEVICE } peer add peerid peerip peerport\n");
-	printf("nw show { DEVICE | dev DEVICE } peer change peerip");
-	printf("nw set  { DEVICE | dev DEVICE } dev show peer  peerid\n");
-	printf("nw set  { DEVICE | dev DEVICE } dev del peer  peerid\n");
-	printf("nw set  { DEVICE | dev DEVICE } dev peer statistic peerid\n");
-	printf("nw set  { DEVICE | dev DEVICE } dev peer connect(client only)\n");
-//	printf("nw peer close peerid\n");
-	return 0;
-}
-int nw_ping_usage()
-{
-	/*nw_ping_usage*/
-	printf("\nnw ping interval ***  timeout  ***\n");
-	return 0;
-}
-int nw_other_usage(void)
-{
-	/*nw_other_usage*/
-	printf("nw set dev nw1  bufflen 256k maxbufflen 4096M.\n");
-	printf("nw set dev nw1 oneclient no. \n");
-	printf("nw set dev nw1 log yes.\n ");
-	printf("nw show dev nw1 other\n");
-	printf("nw show dev nw1 buflen\n");
-}
+int nw_other_maxbufflen(int argc, char **argv);
+int nw_other_queuelen(int argc, char **argv);
+int nw_other_oneclient(int argc, char *argv);
+int nw_other_batch(int argc, char **argv);
+int nw_other_idletime(int argc, char **argv);
+int nw_other_log(int argc, char **argv);
+int nw_other_show(int argc, char **argv);
+int nw_search_if(char *);
 int nw_usage(void)
 {
-	nw_dev_usage();
-	nw_peer_usage();
-	nw_other_usage();
-	nw_ping_usage();
+	/*nw_peer_usage*/
+	fprintf("Usage:nw add {DEVICE |dev DEVICE}\n"
+			"			  [peer  PEERID PEERIP PEERPORT]\n "
+			" nw change {DEVICE |dev DEVICE}\n "
+			"		    [peer PEERID PEERIP PEERPORT]\n "
+			" nw set { DEVICE | dev DEVICE }[{ close | open }]\n "
+            "                    			[ bindport PORTNUM ]\n "
+            "                     			[ peer PEERID PEERIP PEERPORT ]\n "
+            "                     			[ ping  PINGARGV ]\n "
+			"					  			[ other { bufflen BUFFLEN }|\n "
+			"										{ maxbufflen MAXBUFFLEN }|\n "
+			"										{ queuelen QUEUELEN }|\n "
+			"										{ oneclient yes|no }|\n "
+			"										{ batch BATCHSIZE }|\n "
+			"										{ idletimeout TIMEINTERVAL }|\n "
+			"										{ log }]\n "
+            "                     			[ self OWNID ]\n "
+            "				 	 			[ mode client | server ]\n "
+            "nw delete { DEVICE | dev DEVICE } [ peer PEERID ]\n "
+	return 0;
 }
-static int nw_ioctl(struct nw_oper_head *head)
+static int get_link_mode(const char *mode)
 {
-    struct ifreq req;
-    int sock,ret;
-
-    memset(&req,0,sizeof(req));
-    req.ifr_data = (void *)head;
-    strcpy(req.ifr_name,head->devname);
-	head->result=0;
-
-    sock = socket(AF_INET,SOCK_DGRAM,0);
-    if(!sock)
-    {
-		printf("peer sockert err.\n");
-        return -1;
-    }
-    
-    ret = ioctl(sock,NW_OPER,&req);
-    if(ret == -1 ) 
-	{
-		printf("nw %s oper %d error\n",head->devname,head->command);
-	}
-    close(sock);
-    return ret;
-}
-//nw del dev nw1 peerid p1  
-static int nw_peer_del(int argc, char * argv[])
-{
-	struct nw_peer_entry peer;
-	int ret,i;
-	if(argc != 6)
-	{
-		/*command error*/
-		nw_peer_usage();
-		return 0;
-	}else
-	{
-		memset(&peer,0,sizeof(struct nw_peer_entry));
-		peer.head.type = NW_OPER_PEER;
-		peer.head.command = NW_COMM_PEER_DEL;
-		peer.count = 1;
-		ret = nw_ioctl(&peer.head);
-		if(ret)
-			printf("peer del error.\n");
-	}
-	return ret;
-}
-//nw change dev nw1 peerid p1 peerip 192.168.2.1 peerport 82534
-static int nw_peer_change(int argc, char *argv[])
-{
-	struct nw_peer_entry peer;
-	int ret;
-	char *p,*q,**err = NULL;
-	if(argc != 10)
-	{
-		/*command error*/
-		nw_peer_usage();
-		ret = 0;
-		return ret ;
-	}else
-	{
-		if(strncmp(argv[4],"peerid",6) != 0 || strncmp(argv[6],"peerip",6) != 0 || strncmp(argv[8],"peerport",8) != 0)
-		{	
-			return CMDERR;
-		}
-		memset(&peer,0,sizeof(struct nw_peer_entry));	
-		strncpy(peer.peerid[0], argv[5],sizeof(argv[5]));
-		inet_pton(AF_INET,argv[7],&peer.ip[0]);
-		peer.port[0] =  (unsigned short) strtoul(argv[9], err, 0);
-		peer.count = 1;
-		peer.head.type = NW_OPER_PEER;
-		peer.head.command = NW_COMM_PEER_CHANGE;
-		ret = nw_ioctl(&peer.head);
-		if(ret)
-		{
-			printf("peerip %s  peerport %s",argv[7],argv[8]);
-
-		}			
-	}
-	return ret;
-}
-//nw add dev nw1 peerid p1 peerip 192.168.2.1 peerport 82534
-static int nw_peer_add(int argc, char *argv[])
-{
-	struct nw_peer_entry peer;
-	int ret;
-	char *p,*q,**err = NULL;
-	if(argc != 10)
-	{
-		/*command error*/
-		nw_peer_usage();
-		return 0;
-	}else
-	{
-		memset(&peer,0,sizeof(struct nw_peer_entry));	
-		if(strncmp(argv[4],"peerid",6) != 0 ||strncmp(argv[6],"peerip",6) != 0 ||strncmp(argv[8],"peerport",8) != 0)
-		{
-			perror("peerip peerport  assumed.");
-			return CMDERR;		
-		}
-		strncpy(peer.peerid[0], argv[5],sizeof(argv[5]));
-
-		inet_pton(AF_INET,argv[7],&peer.ip[0]);
-		
-		peer.port[0] = (unsigned short) strtoul(argv[9], err, 0);
-		peer.count = 1;
-		peer.head.type = NW_OPER_PEER;
-		peer.head.command = NW_COMM_PEER_ADD;
-		ret = nw_ioctl(&peer.head);
-		if(ret)
-		{
-			printf("peerip : %s ",argv[7]);
-			printf("peerpot: %s ",argv[9]);
-		}
-	}
-		return ret;
-}
-//nw set dev nw1 del peerid p1,p2,p3 
-static int nw_peer_list_del(int argc,char *argv[])
-{
-	struct nw_peer_entry peer;
-	int ret,i;
-	char token[MAX_PEER_NUMBER][MAX_PEERNAME_LENGTH];
-	char *p,
-		 *save_p =NULL,
-		  **err = NULL;
-	memset(&peer,0,sizeof(struct nw_peer_entry));
-	memset(token,0,sizeof(token));
-	if(argc !=6 )
-	{
-		nw_peer_usage();
-		ret = 0;
-		return ret;
-	}
-	else
-	{
-		strcpy(peer.head.devname,argv[3]);
-		/* argv[5] p1,p2,p3*/
-		if(argv[5] == NULL)
-		{
-				printf("command err.");
-		}
-		else
-		{	
-			for(i = 0,p = argv[5];(p = strtok_r(p,",",&save_p) != NULL);p = NULL,i++)
-			{
-				if(i > MAX_PEER_NUMBER -1)
-				{
-						printf("command error.too many peers");
-						return -1;
-				}
-				else
-				{
-					strcpy(token[i],p);
-					strcpy(peer.peerid[i],token[i]);
-				}
-			}
-		}
-		peer.count = i;
-		peer.head.type =NW_OPER_PEER;
-		peer.head.command=NW_COMM_PEER_DEL;
-		ret = nw_ioctl(&peer.head);
-		if(ret)
-		{
-			printf("ioctl err.\n");
-		}
-	}
-	return ret;
-}
-//dev nw1 peer  
-//NW_COMM_PEER_LIST
-static int nw_peer_show(int argc, char *argv[])
-{	
-	struct nw_peer_entry peer;
-	int ret;
-
-	if(argc < 5)
-	{
-		nw_peer_usage();
-		return 0;
-	}
-	else
-	{
-		memset(&peer,0,sizeof(struct nw_peer_entry));
-		peer.head.type = NW_OPER_PEER;
-		peer.head.command = NW_COMM_PEER_LIST;
-		ret = nw_ioctl(&peer.head);
-		if(ret)
-		{
-			printf("ioctl err.");
-		}	
-		return ret;
-	}
+	if (strcasecmp(mode, "client") == 0)
+		return NW_MODE_CLIENT;
+	if (strcasecmp(mode, "dormant") == 0)
+		return NW_MODE_SERVER;
+	return -1;
 }
 //statistic 
 //nw show dev nw1   

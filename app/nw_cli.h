@@ -42,7 +42,10 @@
 #define NW_OPER_FAIL		0			//操作失败
 #define NW_OPER_SUCCESS		1			//操作成功
 
-
+enum{
+	NW_MODE_CLIENT,// client
+	NW_MODE_SERVER     // server
+};
 struct nw_oper_head
 {
 	u32 type;			//操作类型ID
