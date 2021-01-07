@@ -7,9 +7,36 @@
 /*nw usage*/
 int nw_peer_usage(void);
 int nw_other_usage(void);
-
+int nw_self_usage(void);
+int nw_mode_usage(void);
+int nw_usage(void)
+{
+	fprintf("Usage:nw add { DEVICE |dev DEVICE}\n"
+			"			  [peer  PEERID PEERIP PEERPORT]\n"
+			" 	nw change {DEVICE |dev DEVICE}\n "
+			"		      [peer PEERID PEERIP PEERPORT]\n "
+			" 	nw set { DEVICE | dev DEVICE }\n "
+            "                    			[ bindport PORTNUM ]\n "
+            "                     			[ peer PEERID PEERIP PEERPORT ]\n "
+            "                     			[ ping  PINGARGV ]\n "
+			"					  			[ other [ bufflen BUFFLEN ]|\n "
+			"										[ maxbufflen MAXBUFFLEN ]|\n "
+			"										[ queuelen QUEUELEN ]|\n "
+			"										[ oneclient {yes|no} ]|\n "
+			"										[ batch BATCHSIZE ]|\n "
+			"										[ idletimeout TIMEINTERVAL ]|\n "
+			"										[ log ]\n "
+            "                     			[ self OWNID ]\n "
+            "				 	 			[ mode {client | server} ]\n "
+			"\n"
+			"	nw show [ DEVICE | dev DEVICE ][status]{ peer|peer PEERID }\n"
+            "	nw del { DEVICE | dev DEVICE } { peer PEERID | PEERID |PEERSID}\n"
+			"	nw connect [ DEVICE | dev DEVICE ]\n"
+			"	nw close [ DEVICE | dev DEVICE ] [ peer PEERID| PEERID ]\n"
+	return 0;
+}
 /*nw other*/
-int nw_other_maxbufflen(int argc, char **argv);
+int nw_other_maxbufflen(int argc, char **argv );
 int nw_other_queuelen(int argc, char **argv);
 int nw_other_oneclient(int argc, char *argv);
 int nw_other_batch(int argc, char **argv);
@@ -17,34 +44,12 @@ int nw_other_idletime(int argc, char **argv);
 int nw_other_log(int argc, char **argv);
 int nw_other_show(int argc, char **argv);
 int nw_search_if(char *);
-int nw_usage(void)
-{
-	/*nw_peer_usage*/
-	fprintf("Usage:nw add {DEVICE |dev DEVICE}\n"
-			"			  [peer  PEERID PEERIP PEERPORT]\n "
-			" nw change {DEVICE |dev DEVICE}\n "
-			"		    [peer PEERID PEERIP PEERPORT]\n "
-			" nw set { DEVICE | dev DEVICE }[{ close | open }]\n "
-            "                    			[ bindport PORTNUM ]\n "
-            "                     			[ peer PEERID PEERIP PEERPORT ]\n "
-            "                     			[ ping  PINGARGV ]\n "
-			"					  			[ other { bufflen BUFFLEN }|\n "
-			"										{ maxbufflen MAXBUFFLEN }|\n "
-			"										{ queuelen QUEUELEN }|\n "
-			"										{ oneclient yes|no }|\n "
-			"										{ batch BATCHSIZE }|\n "
-			"										{ idletimeout TIMEINTERVAL }|\n "
-			"										{ log }]\n "
-            "                     			[ self OWNID ]\n "
-            "				 	 			[ mode client | server ]\n "
-            "nw delete { DEVICE | dev DEVICE } [ peer PEERID ]\n "
-	return 0;
-}
+
 static int get_link_mode(const char *mode)
 {
 	if (strcasecmp(mode, "client") == 0)
 		return NW_MODE_CLIENT;
-	if (strcasecmp(mode, "dormant") == 0)
+	if (strcasecmp(mode, "server") == 0)
 		return NW_MODE_SERVER;
 	return -1;
 }
@@ -99,7 +104,9 @@ int nw_dev_show(int argc, char *argv[])
 	return 0;
 }
 //show dev status
-int nw_dev_show_peer(int argc, char **argv);
+int nw_dev_search_peer(const char *peerid);
+int nw_dev_show_peer(const char *peerid);
+int nw_dev_show_peers(const char **peerlist);
 static int nw_search_if(char *ifn)
 {
 	FILE *fp;
@@ -114,7 +121,7 @@ static int nw_search_if(char *ifn)
 	
 	memset(buf,0,sizeof(buf));
 
-	/*nw1 device search*/
+	/*nw%d device search*/
 	while(fgets(buf,512,fp) != NULL){
 		if(*buf != ' ')
 		{
@@ -165,35 +172,14 @@ int nw_other_bufflen(const char *devname ,const char *bufflen)
 	}
 	return ret;
 }
-int nw_dev_usage()
-{
-	printf("nw set dev nw1\n");
-	printf("nw show dev nw1\n");
-	printf("nw show dev \n");
-	return 0;
-}
+
 int nw_dev_connect(int argc, char **argv)
-{
-	char *dev =NULL;
-	int ret;
-	struct nw_peer_entry entry;
-	entry.head.command = NW_OPER_PEER;
-	entry.head.type = NW_COMM_PEER_CONNECT;
-	ret = nw_ioctl(&entry.head);
-	if(ret == -1 )
-	{
-		printf("nw_dev_connect %d failed",ret);
-	}
-	return ret;
-}
-//nw set dev name add peer ip port peerid
- int nw_dev_set(int argc, char **argv)
+int nw_do_set(int argc, char **argv)
 {	
-	
 
 	return 0;
 }
-int nw_dev_close( int argc, char **argv)
+int nw_dev_close()
 {
 	return 0;
 }

@@ -40,7 +40,6 @@ void duparg2(const char *key, const char *arg)
 	exit(-1);
 }
 
-
 int get_unsigned(unsigned int *val, const char *arg, int base)
 {
 	unsigned long res;
@@ -61,6 +60,39 @@ int get_unsigned(unsigned int *val, const char *arg, int base)
 
 	/* out side range of unsigned */
 	if (res > UINT_MAX)
+		return -1;
+
+	*val = res;
+	return 0;
+}
+
+int get_integer(int *val, const char *arg, int base)
+{
+	long res;
+	char *ptr;
+
+	if (!arg || !*arg)
+		return -1;
+
+	res = strtol(arg, &ptr, base);
+
+	/* If there were no digits at all, strtol()  stores
+	 * the original value of nptr in *endptr (and returns 0).
+	 * In particular, if *nptr is not '\0' but **endptr is '\0' on return,
+	 * the entire string is valid.
+	 */
+	if (!ptr || ptr == arg || *ptr)
+		return -1;
+
+	/* If an underflow occurs, strtol() returns LONG_MIN.
+	 * If an overflow occurs,  strtol() returns LONG_MAX.
+	 * In both cases, errno is set to ERANGE.
+	 */
+	if ((res == LONG_MAX || res == LONG_MIN) && errno == ERANGE)
+		return -1;
+
+	/* Outside range of int */
+	if (res < INT_MIN || res > INT_MAX)
 		return -1;
 
 	*val = res;
