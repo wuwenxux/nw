@@ -10,8 +10,6 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
-
-
 #define u16 unsigned short
 #define u32 unsigned int
 #define u64 uint64_t
@@ -20,7 +18,7 @@
 #define MAX_PEER_NUMBER 256
 
 #define NW_OPER	(SIOCDEVPRIVATE + 1)
-
+/* operator */
 #define NW_OPER_PEER		0x01		//peer设置和读取
 #define NW_OPER_PEERSTATUS	0x02		//peer的状态
 #define NW_OPER_TYPE		0x03		//peer类型，服务端/客户端
@@ -29,7 +27,7 @@
 #define NW_OPER_OTHER		0x06		//其它参数
 #define NW_OPER_SELF		0x07		//本端的peerid
 #define NW_OPER_DEVSTAT		0x08		//网卡统计数据
-
+/* command */
 #define NW_COMM_READ			0		//读取参数
 #define NW_COMM_SET				1		//设置参数
 #define NW_COMM_PEER_ADD		2		//增加peer，重复就替换
@@ -43,8 +41,8 @@
 #define NW_OPER_SUCCESS		1			//操作成功
 
 enum{
-	NW_MODE_CLIENT,// client
-	NW_MODE_SERVER     // server
+	NW_MODE_CLIENT,		// client
+	NW_MODE_SERVER      // server
 };
 struct nw_oper_head
 {
@@ -66,7 +64,7 @@ struct nw_peer_entry
 struct nw_peer_status
 {
 	struct nw_oper_head head;
-	u32 count;				//peer总数
+	u32 count;								//peer总数
 	char peerid[MAX_PEER_NUMBER][MAX_PEERNAME_LENGTH];
 	u32 ip[MAX_PEER_NUMBER];				//当前连接的peer端的IP地址
 	u16 port[MAX_PEER_NUMBER];				//当前连接的peer端的端口
@@ -126,6 +124,17 @@ struct nw_other
 	u32 idletimeout;			//单位秒
 };
 
+const char other_str[]
+{
+	"Bufflen",
+	"Maxbufflen",
+	"queuelen",
+	"oneclient",
+	"showlog",
+	"batch",
+	"idletimeout",
+	NULL,
+};
 struct nw_self
 {
 	struct nw_oper_head head;
@@ -162,4 +171,28 @@ const char* dev_stat_str[] =
 	"recvspeed",
 	NULL,
 };
-#endif /* _NGMWAN_DEVCTL_H */
+/*
+comm
+*/
+int nw_dev_show(int argc, char **argv);
+int nw_dev_set(int argc, char **argv);
+int nw_dev_del(int argc, char **argv);
+int nw_dev_add(int argc, char **argv);
+/*peer cmd*/
+int nw_peer_del(struct nw_peer_entry *);
+int nw_peer_set(struct nw_peer_entry *);
+int nw_peer_add(struct nw_peer_entry *);
+int nw_peer_list_del(struct nw_peer_entry *);
+int nw_peer_show(struct nw_peer_entry *);
+int nw_peer_set(struct nw_peer_entry *);
+
+/*other cmd*/
+int nw_other_maxbufflen(struct nw_other* );
+int nw_other_queuelen(struct nw_other*);
+int nw_other_oneclient(struct nw_other*);
+int nw_other_batch(struct nw_other*);
+int nw_other_idletime(struct nw_other*);
+int nw_other_log(struct nw_other*);
+int nw_other_show(struct nw_other*);
+/**/
+#endif /* _NW_DEVCTL_H */

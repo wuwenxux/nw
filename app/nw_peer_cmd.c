@@ -1,14 +1,14 @@
 #include "utils.h"
 #include "nw_cli.h"
 
-static int nw_ioctl(struct nw_oper_head *head)
+static int nw_peer_ioctl(struct nw_peer_entry *entry)
 {
     struct ifreq req;
     int sock,ret;
 
     memset(&req,0,sizeof(req));
-    req.ifr_data = (void *)head;
-    strcpy(req.ifr_name,head->devname);
+    req.ifr_data = (void *)entry;
+    strcpy(req.ifr_name,entry->head->devname);
 	head->result=0;
 
     sock = socket(AF_INET,SOCK_DGRAM,0);
@@ -49,7 +49,7 @@ int nw_peer_del(int argc, char * argv[])
 	return ret;
 }
 //nw change dev nw1 peerid p1 peerip 192.168.2.1 peerport 82534
-int nw_peer_change(int argc, char *argv[])
+int nw_peer_set(int argc, char **argv)
 {
 	struct nw_peer_entry peer;
 	int ret;
@@ -83,7 +83,7 @@ int nw_peer_change(int argc, char *argv[])
 	return ret;
 }
 //nw add dev nw1 peerid p1 peerip 192.168.2.1 peerport 82534
- int nw_peer_add(int argc, char *argv[])
+ int nw_peer_add(struct nw_peer_entry *entry)
 {
 	struct nw_peer_entry peer;
 	int ret;
@@ -118,8 +118,9 @@ int nw_peer_change(int argc, char *argv[])
 	}
 		return ret;
 }
-//nw set dev nw1 del peerid p1,p2,p3 
- int nw_peer_list_del(int argc,char *argv[])
+//nw del dev nw1 peerid p1,p2,p3
+//type:NW_OPER_PEER command:NW_COMM_PEER_DEL
+ int nw_peer_list_del(struct nw_peer_entry *entry)
 {
 	struct nw_peer_entry peer;
 	int ret,i;
@@ -129,36 +130,7 @@ int nw_peer_change(int argc, char *argv[])
 		  **err = NULL;
 	memset(&peer,0,sizeof(struct nw_peer_entry));
 	memset(token,0,sizeof(token));
-	if(argc !=6 )
-	{
-		nw_peer_usage();
-		ret = 0;
-		return ret;
-	}
-	else
-	{
-		strcpy(peer.head.devname,argv[3]);
-		/* argv[5] p1,p2,p3*/
-		if(argv[5] == NULL)
-		{
-				printf("command err.");
-		}
-		else
-		{	
-			for(i = 0,p = argv[5];(p = strtok_r(p,",",&save_p) != NULL);p = NULL,i++)
-			{
-				if(i > MAX_PEER_NUMBER -1)
-				{
-						printf("command error.too many peers");
-						return -1;
-				}
-				else
-				{
-					strcpy(token[i],p);
-					strcpy(peer.peerid[i],token[i]);
-				}
-			}
-		}
+
 		peer.count = i;
 		peer.head.type =NW_OPER_PEER;
 		peer.head.command=NW_COMM_PEER_DEL;
@@ -170,9 +142,9 @@ int nw_peer_change(int argc, char *argv[])
 	}
 	return ret;
 }
-//dev nw1 peer  
-//NW_COMM_PEER_LIST
- int nw_peer_show(int argc, char *argv[])
+//nw show dev nw1 peerid 
+//type:NW_OPER_PEER command:NW_COMM_PEER_LIST
+int nw_peer_show(struct nw_peer_entry *entry)
 {	
 	struct nw_peer_entry peer;
 	int ret;

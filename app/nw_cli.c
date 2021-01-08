@@ -5,13 +5,20 @@
 #define M 1024*1024
 #define CMDERR -2
 /*nw usage*/
-int nw_peer_usage(void);
+int nw_peer_usage(void)
+{
+	fprintf(stderr,"Usage: ...peerid PEERID peerip PEERIP peerport PEERPORT\n"
+					"PEERID: p1- p31\n"
+					"PEERIP: valid ip add\n"
+					"PEERPORT: 1- 65535\n");
+	exit(-1);
+}
 int nw_other_usage(void);
 int nw_self_usage(void);
 int nw_mode_usage(void);
 int nw_usage(void)
 {
-	fprintf("Usage:nw add { DEVICE |dev DEVICE}\n"
+	fprintf(stderr,"Usage:nw add { DEVICE |dev DEVICE}\n"
 			"			  [peer  PEERID PEERIP PEERPORT]\n"
 			" 	nw change {DEVICE |dev DEVICE}\n "
 			"		      [peer PEERID PEERIP PEERPORT]\n "
@@ -32,18 +39,11 @@ int nw_usage(void)
 			"	nw show [ DEVICE | dev DEVICE ][status]{ peer|peer PEERID }\n"
             "	nw del { DEVICE | dev DEVICE } { peer PEERID | PEERID |PEERSID}\n"
 			"	nw connect [ DEVICE | dev DEVICE ]\n"
-			"	nw close [ DEVICE | dev DEVICE ] [ peer PEERID| PEERID ]\n"
-	return 0;
+			"	nw close [ DEVICE | dev DEVICE ] [ peer PEERID| PEERID ]\n");
+	exit(-1);
 }
-/*nw other*/
-int nw_other_maxbufflen(int argc, char **argv );
-int nw_other_queuelen(int argc, char **argv);
-int nw_other_oneclient(int argc, char *argv);
-int nw_other_batch(int argc, char **argv);
-int nw_other_idletime(int argc, char **argv);
-int nw_other_log(int argc, char **argv);
-int nw_other_show(int argc, char **argv);
-int nw_search_if(char *);
+
+static int nw_search_if(char *);
 
 static int get_link_mode(const char *mode)
 {
@@ -53,9 +53,14 @@ static int get_link_mode(const char *mode)
 		return NW_MODE_SERVER;
 	return -1;
 }
+//nw show 
+int nw_dev_show (int argc, char *argv[])
+{
+	return 0;
+}
 //statistic 
 //nw show dev nw1   
-int nw_dev_show(int argc, char *argv[])
+int nw_dev_show_statistic(int argc, char *argv[])
 {
 	int sock;
 	struct ifreq req;
@@ -82,10 +87,11 @@ int nw_dev_show(int argc, char *argv[])
 	{
 		printf( " nw device not found.");
 	}
-
 	strcpy(req.ifr_name,ifname);
+	dev_stat.head.type = NW_OPER_DEVSTAT;
+	dev_stat.head.command = NW_COMM_READ;
 	req.ifr_data = &dev_stat;
-	ret = ioctl(sock,NW_OPER_DEVSTAT,&req);
+	ret = ioctl(sock,NW_OPER,&req);
 	if(ret == -1)
 	{
 		perror("ioctl error.");
@@ -150,8 +156,8 @@ static int nw_search_if(char *ifn)
 	/* not exist net device */
 	return -1;
 }
-//nw set dev nw1 bufflen 256K maxbufflen 4096M
-int nw_other_bufflen(const char *devname ,const char *bufflen)
+//nw set dev nw1 other bufflen 256K 
+int nw_other_bufflen(const char *dev, int bufflen)
 {
 	
 	int ret;
@@ -161,7 +167,7 @@ int nw_other_bufflen(const char *devname ,const char *bufflen)
 	
 	nw_info.head.command = NW_OPER_OTHER;
 	nw_info.head.type = NW_COMM_SET;
-	strcpy(nw_info.head.devname,devname);
+	strcpy(nw_info.head.devname,dev);
 	if(get_unsigned(&nw_info.bufflen,bufflen,0));
 		printf("Invalid \"%s\" value\n", bufflen);
 
@@ -172,51 +178,55 @@ int nw_other_bufflen(const char *devname ,const char *bufflen)
 	}
 	return ret;
 }
-
-int nw_dev_connect(int argc, char **argv)
-int nw_do_set(int argc, char **argv)
+//nw connect dev DEVICE;
+int nw_dev_connect(int argc, char **argv);
+//nw close dev DEVICE;
+int nw_dev_set(int argc, char **argv)
 {	
-
 	return 0;
 }
-int nw_dev_close()
+int nw_dev_close(int argc,char **argv)
 {
 	return 0;
 }
-/*nw dev */
-//dev nw1 
-/*nw self*/
-int nw_self_ownid(int argc, char **argv);
-int do_set (int argc, char **argv);
-
+int nw_self_ownid(const char *dev, char *ownid)
+{
+	return 0;
+}
 int main(int argc,char *argv[])
 {
-	struct if_req ifr0;
 	int ret = -1;
-	u32 mask = 0;
-	u32 flags = 0;
 	/*other*/
 	int qlen =-1;
 	int bufflen =-1;
 	int maxbufflen = -1;
-	char dev[IF_NAMESIZE] = {0};
+	char *dev = NULL;
+	char *newname = NULL;
 	struct nw_peer_entry peer_entry;
 	memset(&peer_entry,0,sizeof(struct nw_peer_entry));
 
 	while(argc > 1)
 	{
 		NEXT_ARG();
-		if(matches(*argv,"set") == 0 || matches(*argv,"change") == 0)
+		if(matches(*argv,"set") == 0 ||
+		   matches(*argv,"change") == 0)
 		{
 			return nw_dev_set(argc-1,argv+1);
 		}
-		else if(matches(*argv,"show") == 0)
+		else if(matches(*argv,"show") == 0 ||
+				matches(*argv,"list" == 0) ||
+				matches(*argv,"lst"))
 		{
 			return nw_dev_show(argc-1,argv+1);
 		}
 		else if(matches(*argv,"connect") == 0)
 		{
 			return nw_dev_connect(argc-1,argv+1);
+		}
+		else if(matches(*argv,"name") == 0)
+		{
+			NEXT_ARG();
+			newname = *argv;
 		}
 		else if(matches(*argv,"close") == 0)
 		{
@@ -248,4 +258,5 @@ int main(int argc,char *argv[])
 		fprintf(stderr,"Not enough of information: dev argument is required. \n");
 		exit(-1);
 	}
+	return 0;
 }
