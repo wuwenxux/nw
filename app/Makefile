@@ -2,7 +2,7 @@
 CC     = gcc
 CFLAGS = -O2 -g
 TARGET = nwcli
-OBJS   = nw_cli.h nw_cli.c utils.c utils.h 
+OBJS   = nw_cli.o utils.o nw_comm_cmd.o nw_other_cmd.o nw_peer_cmd.o 
 
 .SUFFIXES: .c .o
 
@@ -23,3 +23,4 @@ clean:
 depend: $(OBJS:.o=.c)
 	-@ $(RM) depend.inc
 	-@ for i in $^; do cpp -MM $$i | sed "s/\ [_a-zA-Z0-9][_a-zA-Z0-9]*\.c//g" >> depend.inc; done
+-include depend.inc

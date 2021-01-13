@@ -40,6 +40,11 @@
 #define NW_OPER_FAIL		0			//操作失败
 #define NW_OPER_SUCCESS		1			//操作成功
 
+
+
+/*errno */
+#define CMDERR -1
+#define SOCKERR -2
 enum{
 	NW_MODE_CLIENT,		// client
 	NW_MODE_SERVER      // server
@@ -77,21 +82,6 @@ struct nw_peer_status
 	u64 recvbytes[MAX_PEER_NUMBER];			//字节单位
 	u64 recvspeed[MAX_PEER_NUMBER];			//字节单位
 };
-const char* peer_status_str[] =
-{
-	"Count",
-	"PeerID",
-	"address",
-	"port",
-	"active",
-	"connecttime",
-	"sendpackets",
-	"sendbytes",
-	"recvpackets",
-	"recvbytes",
-	"recvspeed",
-	NULL,
-};
 struct nw_type
 {
 	struct nw_oper_head head;
@@ -124,17 +114,6 @@ struct nw_other
 	u32 idletimeout;			//单位秒
 };
 
-const char other_str[]
-{
-	"Bufflen",
-	"Maxbufflen",
-	"queuelen",
-	"oneclient",
-	"showlog",
-	"batch",
-	"idletimeout",
-	NULL,
-};
 struct nw_self
 {
 	struct nw_oper_head head;
@@ -156,43 +135,29 @@ struct nw_dev_stat
 	u64 recvbytes;			//字节单位
 	u64 recvspeed;			//字节单位
 };
-const char* dev_stat_str[] =
-{
-	"Up",
-	"sendpackets",
-	"senddrops",
-	"senderrors",
-	"sendbytes",
-	"sendspeed",
-	"recvpackets",
-	"recvdrops",
-	"recverrors",
-	"recvbytes",
-	"recvspeed",
-	NULL,
-};
 /*
-comm
+command
 */
-int nw_dev_show(int argc, char **argv);
-int nw_dev_set(int argc, char **argv);
-int nw_dev_del(int argc, char **argv);
-int nw_dev_add(int argc, char **argv);
+int nw_dev_show(int ,char **);
+int nw_dev_set(int , char **);
+int nw_dev_del(int , char **);
+int nw_dev_bindport(int ,char **);
+/*connect*/
+//nw connect {dev DEVICE | DEVICE};
+int nw_dev_connect(int argc, char **argv);
+int nw_dev_close(int argc,char **argv);
 /*peer cmd*/
-int nw_peer_del(struct nw_peer_entry *);
-int nw_peer_set(struct nw_peer_entry *);
-int nw_peer_add(struct nw_peer_entry *);
-int nw_peer_list_del(struct nw_peer_entry *);
-int nw_peer_show(struct nw_peer_entry *);
-int nw_peer_set(struct nw_peer_entry *);
-
+int nw_peer_change(int , char **);
+int nw_peer_del(int argc, char **argv);
+int nw_peer_set(int argc, char **argv);
+int nw_peer_add(int argc ,char **argv);
+int nw_peer_list_del(int argc, char **argv);
+int nw_peer_show(int argc, char **argv);
+int nw_peer_set(int argc, char **argv);
+static int nw_peer_ioctl(struct nw_peer_entry *);
 /*other cmd*/
-int nw_other_maxbufflen(struct nw_other* );
-int nw_other_queuelen(struct nw_other*);
-int nw_other_oneclient(struct nw_other*);
-int nw_other_batch(struct nw_other*);
-int nw_other_idletime(struct nw_other*);
-int nw_other_log(struct nw_other*);
-int nw_other_show(struct nw_other*);
-/**/
+static int nw_other_ioctl(struct nw_other *);
+int nw_other_set(int argc, char **);
+
+
 #endif /* _NW_DEVCTL_H */
