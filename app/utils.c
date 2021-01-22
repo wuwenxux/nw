@@ -98,6 +98,8 @@ int get_integer(int *val, const char *arg, int base)
 	*val = res;
 	return 0;
 }
+/* Returns false if 'prefix' is a not empty prefix of 'string'.
+ */
 bool matches(const char *prefix, const char *string)
 {
 	if (!*prefix)

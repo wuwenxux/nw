@@ -70,21 +70,19 @@ int nw_peer_del(int argc, char * argv[])
 	}
 	return ret;
 }
-//nw change dev nw1 peerid p1 peerip 192.168.2.1 peerport 82534
+//peerid p1 peerip 192.168.2.1 peerport 82534
 int nw_peer_set(int argc, char **argv)
 {
 	struct nw_peer_entry peer;
 	int ret;
 	char *p,*q,**err = NULL;
-	if(argc != 10)
+	if(argc != 6)
 	{
 		/*command error*/
 		nw_peer_usage();
-		ret = 0;
-		return ret ;
 	}else
 	{
-		if(strncmp(argv[4],"peerid",6) != 0 || strncmp(argv[6],"peerip",6) != 0 || strncmp(argv[8],"peerport",8) != 0)
+		if(strncmp(argv[0],"peerid",6) != 0 || strncmp(argv[2],"peerip",6) != 0 || strncmp(argv[4],"peerport",8) != 0)
 		{	
 			return CMDERR;
 		}
@@ -99,7 +97,6 @@ int nw_peer_set(int argc, char **argv)
 		if(ret)
 		{
 			printf("peerip %s  peerport %s",argv[7],argv[8]);
-
 		}			
 	}
 	return ret;

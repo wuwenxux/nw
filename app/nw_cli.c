@@ -51,7 +51,7 @@ int nw_usage(void)
 	exit(-1);
 }
 
-static int nw_search_if(char *);
+
 
 static int get_nw_mode(const char *mode)
 {
@@ -108,7 +108,7 @@ int nw_dev_show_statistic(int argc, char *argv[])
 	strcpy(req.ifr_name,ifname);
 	dev_stat.head.type = NW_OPER_DEVSTAT;
 	dev_stat.head.command = NW_COMM_READ;
-	req.ifr_data = &dev_stat;
+	strcpy(req.ifr_data,&dev_stat);
 	ret = ioctl(sock,NW_OPER,&req);
 	if(ret == -1)
 	{
@@ -131,25 +131,18 @@ int nw_dev_show_statistic(int argc, char *argv[])
 int nw_dev_search_peer(int argc, char **);
 int nw_dev_show_peer(int argc ,char **);
 int nw_dev_show_peers(int argc, char **);
+
+
 //nw connect dev DEVICE
 int nw_dev_connect(int argc, char **argv)
 {
 	return 0;
 }
 
-int nw_set(int argc, char **argv)
-{	
-	return 0;
-}
-
-int nw_self_ownid(const char *dev, char *ownid)
-{
-	return 0;
-}
 int main(int argc,char *argv[])
 {
 	int ret = -1;
-	/*other*/
+	/*
 	struct nw_other info;
 	memset(&info,0,sizeof(struct nw_other));
 	int qlen =-1;
@@ -158,40 +151,51 @@ int main(int argc,char *argv[])
 	char *dev = NULL;
 	char *basename = NULL;
 	basename = strrchr(*argv,'/');
-	/*peer*/
+	
 	struct nw_peer_entry peer_entry;
 	memset(&peer_entry,0,sizeof(struct nw_peer_entry));
-	NEXT_ARG();
-	if(argc < 1 ) 
+	*/
+	
+	//NEXT_ARG();
+	if(argc < 2 ) 
 	{
-		return nw_dev_show(0,NULL);
+		nw_usage();
 	}
-	if(matches(*argv,"set") == 0 )
+	else
 	{
-		return nw_dev_set(argc-1,argv+1);
+		NEXT_ARG();
+		if(matches(*argv,"set") == 0 )
+		{
+			return nw_dev_set(argc-1,argv+1);
+		}
+		else if(matches(*argv,"change") == 0)
+		{
+			return nw_peer_change(argc-1,argv+1);
+		}
+		else if(matches(*argv,"show") == 0 ||
+				matches(*argv,"list") == 0 ||
+				matches(*argv,"lst") == 0 )
+		{
+			return nw_dev_show(argc-1,argv+1);
+		}
+		else if(matches(*argv,"bindport") == 0)
+		{
+			return nw_dev_bindport(argc-1,argv+1);
+		}
+		else if(matches(*argv,"connect") == 0)
+		{
+				return nw_dev_connect(argc-1,argv+1);
+		}
+		else if(matches(*argv,"close") == 0)
+		{
+			return nw_dev_close(argc-1,argv+1);
+		}
+		else if(matches(*argv,"help") == 0)
+		{
+			 nw_usage();
+			 return 0;
+		}
 	}
-	else if(matches(*argv,"change") == 0)
-	{
-		return nw_peer_change(argc-1,argv+1);
-	}
-	else if(matches(*argv,"show") == 0 ||
-			matches(*argv,"list" == 0) ||
-			matches(*argv,"lst"))
-	{
-		return nw_dev_show(argc-1,argv+1);
-	}
-	else if(matches(*argv,"bindport" == 0))
-	{
-		return nw_dev_bindport(argc-1,argv+1);
-	}
-	else if(matches(*argv,"connect") == 0)
-	{
-			return nw_dev_connect(argc-1,argv+1);
-	}
-	else if(matches(*argv,"close") == 0)
-	{
-		return nw_dev_close(argc-1,argv+1);
-	}
-
-	return 0;
+	fprintf(stderr, "Command \"%s\" is unknown, try \"nw help\".\n",*argv);
+	exit(-1);
 }

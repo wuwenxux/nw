@@ -32,7 +32,7 @@ int nw_other_bufflen(const char *dev, int bufflen)
 	nw_info.head.type = NW_COMM_SET;
 	strcpy(nw_info.head.devname,dev);
 	if(get_unsigned(&nw_info.bufflen,bufflen,0));
-		printf("Invalid \"%s\" value\n", bufflen);
+		printf("Invalid \"%d\" value\n", bufflen);
 
 	ret = nw_other_ioctl(&nw_info);
 	if(ret == -1)

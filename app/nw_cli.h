@@ -45,10 +45,10 @@
 /*errno */
 #define CMDERR -1
 #define SOCKERR -2
-enum{
-	NW_MODE_CLIENT,		// client
-	NW_MODE_SERVER      // server
-};
+typedef enum nw_mode{
+	NW_MODE_CLIENT = 0,		// client
+	NW_MODE_SERVER = 1     // server 
+}nw_mode_t;
 struct nw_oper_head
 {
 	u32 type;			//操作类型ID
@@ -136,12 +136,18 @@ struct nw_dev_stat
 	u64 recvspeed;			//字节单位
 };
 /*
-command
+common
 */
 int nw_dev_show(int ,char **);
 int nw_dev_set(int , char **);
 int nw_dev_del(int , char **);
 int nw_dev_bindport(int ,char **);
+int nw_usage(void);
+int nw_search_if(char *);
+void nw_peer_usage();
+void nw_self_usage();
+void nw_mode_usage();
+
 /*connect*/
 //nw connect {dev DEVICE | DEVICE};
 int nw_dev_connect(int argc, char **argv);
@@ -158,6 +164,7 @@ static int nw_peer_ioctl(struct nw_peer_entry *);
 /*other cmd*/
 static int nw_other_ioctl(struct nw_other *);
 int nw_other_set(int argc, char **);
+int nw_search_if(char *);
 
 
 #endif /* _NW_DEVCTL_H */
