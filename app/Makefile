@@ -1,7 +1,7 @@
 # nwcli Makefile
 CC     = gcc
 CFLAGS = -O2 -g
-TARGET = nwcli
+TARGET = nw
 OBJS   = nw_cli.o utils.o nw_comm_cmd.o nw_other_cmd.o nw_peer_cmd.o 
 
 .SUFFIXES: .c .o

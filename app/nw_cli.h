@@ -18,7 +18,7 @@
 #define MAX_PEER_NUMBER 256
 
 #define NW_OPER	(SIOCDEVPRIVATE + 1)
-/* operator */
+/* TYPE */
 #define NW_OPER_PEER		0x01		//peer设置和读取
 #define NW_OPER_PEERSTATUS	0x02		//peer的状态
 #define NW_OPER_TYPE		0x03		//peer类型，服务端/客户端
@@ -46,8 +46,8 @@
 #define CMDERR -1
 #define SOCKERR -2
 typedef enum nw_mode{
-	NW_MODE_CLIENT = 0,		// client
-	NW_MODE_SERVER = 1     // server 
+	NW_MODE_CLIENT = 1,			// client
+	NW_MODE_SERVER = 2   		// server 
 }nw_mode_t;
 struct nw_oper_head
 {
@@ -85,7 +85,7 @@ struct nw_peer_status
 struct nw_type
 {
 	struct nw_oper_head head;
-	u32 mode;			//0-server,1-client
+	nw_mode_t mode;			//1-server,2-client
 };
 
 struct nw_bind
@@ -135,36 +135,33 @@ struct nw_dev_stat
 	u64 recvbytes;			//字节单位
 	u64 recvspeed;			//字节单位
 };
+
 /*
 common
 */
+void nw_dev_show_statistic(char  *);
+int nw_ioctl(struct nw_oper_head *p);
 int nw_dev_show(int ,char **);
 int nw_dev_set(int , char **);
-int nw_dev_del(int , char **);
 int nw_dev_bindport(int ,char **);
-int nw_usage(void);
+void nw_usage(void);
 int nw_search_if(char *);
 void nw_peer_usage();
 void nw_self_usage();
 void nw_mode_usage();
-
+int nw_other_set(const char *,struct nw_other*);
+int nw_type_set(const char *, struct nw_type *);
+int nw_ping_set(const char *, struct nw_ping *);
+const char* mode_str(nw_mode_t );
 /*connect*/
-//nw connect {dev DEVICE | DEVICE};
 int nw_dev_connect(int argc, char **argv);
 int nw_dev_close(int argc,char **argv);
 /*peer cmd*/
 int nw_peer_change(int , char **);
 int nw_peer_del(int argc, char **argv);
-int nw_peer_set(int argc, char **argv);
 int nw_peer_add(int argc ,char **argv);
 int nw_peer_list_del(int argc, char **argv);
 int nw_peer_show(int argc, char **argv);
-int nw_peer_set(int argc, char **argv);
-static int nw_peer_ioctl(struct nw_peer_entry *);
-/*other cmd*/
-static int nw_other_ioctl(struct nw_other *);
-int nw_other_set(int argc, char **);
-int nw_search_if(char *);
 
 
 #endif /* _NW_DEVCTL_H */

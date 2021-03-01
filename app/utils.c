@@ -15,6 +15,11 @@ static int __check_ifname(const char *name)
 	}
 	return 0;
 }
+void invarg(const char *msg, const char *arg)
+{
+	fprintf(stderr, "Error: argument \"%s\" is wrong: %s\n", arg, msg);
+	exit(-1);
+}
 
 int check_ifname(const char *name)
 {
@@ -23,7 +28,12 @@ int check_ifname(const char *name)
 		return -1;
 	return __check_ifname(name);
 }
-
+bool check_maxbufflen(uint32_t maxbuf)
+{
+	if( maxbuf < 64 || maxbuf > 102400)
+		return false; 
+	return true;
+}
 void duparg(const char *key, const char *arg)
 {
 	fprintf(stderr,
