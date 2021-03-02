@@ -27,8 +27,9 @@ int nw_peer_change(int argc, char **argv)
 	char *dev = NULL;
 	char *peerid = NULL;
 	char *peerip = NULL;
-	struct nw_peer_entry entry;
-	memset(&entry,0,sizeof(struct nw_peer_entry));
+	struct nw_peer_entry *entry = (struct nw_peer_entry *)calloc(1,sizeof(struct nw_peer_entry));
+	if(entry == NULL)
+		return 0;
 	while(argc > 0)
 	{
 		if(strcmp(*argv,"peerid") == 0)
@@ -42,7 +43,7 @@ int nw_peer_change(int argc, char **argv)
 		}else if(strcmp(*argv,"peerport") == 0)
 		{	
 			NEXT_ARG();
-			if(get_unsigned(&entry.port[0],*argv,0))
+			if(get_unsigned(&entry->port[0],*argv,0))
 				invarg("Invalid \"port\" value\n",*argv);
 		}else
 		{
@@ -65,14 +66,17 @@ int nw_peer_change(int argc, char **argv)
 	{
 		if(peerip)
 		{
-			ret = inet_pton(AF_INET,peerip,&entry.ip[0]);
+			ret = inet_pton(AF_INET,peerip,&entry->ip[0]);
 			if( ret < 0)
 				return -1;
 		}
 		if(peerid)
-			strcpy(entry.peerid[0],peerid);
-		if(nw_do_change(dev,&entry) < 0)
-			return -1;
+			strcpy(entry->peerid[0],peerid);
+		if(nw_do_change(dev,entry) < 0)
+		{
+				free(entry);
+				return -1;	
+		}
 	}
 	return 0;
 }
@@ -89,13 +93,7 @@ static int nw_do_change(const char *dev,struct nw_peer_entry *npe)
 		return -1;
 	return 0;
 }
-//nwcli connect  dev nw
-int nw_peer_connect(int argc, char ** argv)
-{	
-	
-
-    return 0;
-}
+  
 //dev nw1 peerid p1  
 int nw_peer_del(int argc, char ** argv)
 {
@@ -175,23 +173,23 @@ int nw_peer_add(int argc, char ** argv)
 	char *p,*q,**err = NULL;
 	while(argc > 0) 
 	{
-		if(strcmp(*argv,"peerid") == 0)
+		if(strcmp(*argv,"peerid") == 0 || strcmp(*argv,"id") == 0)
 		{
 			NEXT_ARG();
 			if(id)
 				duparg(id,*argv);
 			id = *argv;
-		}else if (strcmp(*argv,"peerip") == 0)
+		}else if (strcmp(*argv,"peerip") == 0 || strcmp(*argv,"ip") == 0)
 		{
 			NEXT_ARG();
 			if(ip)
 				duparg(ip,*argv);
 			ip = *argv;
-		}else if(strcmp(*argv,"peerport") == 0)
+		}else if(strcmp(*argv,"peerport") == 0 ||strcmp(*argv,"port") == 0)
 		{	
 			NEXT_ARG();
 			if(port)
-				duparg(port,*argv);
+				duparg("port",*argv);
 			if(get_unsigned(&port,*argv,0) || port > 65535)
 				invarg("Invalid \"port\"\n",*argv);
 		}else{
@@ -217,6 +215,10 @@ int nw_peer_add(int argc, char ** argv)
 		entry.port[0] = port;
 		if(nw_do_add(dev,&entry) < 0)
 			return -1;
+	}else
+	{
+		fprintf(stderr,"ip id port are all required .\n");
+		exit(-1);
 	}
 	return 0;
 }
