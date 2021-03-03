@@ -42,6 +42,13 @@
 #define NW_OPER_SUCCESS		1			//操作成功
 
 
+<<<<<<< HEAD
+=======
+/*errno */
+#define CMDERR -1
+#define SOCKERR -2
+#define MEMERR -3
+>>>>>>> f324c145d052fa11f479e5398a4620cd82a3c3b5
 typedef enum nw_mode{
 	NW_MODE_CLIENT = 1,			// client
 	NW_MODE_SERVER = 2   		// server 
@@ -108,8 +115,13 @@ struct nw_other
 	char oneclient[4];			//参数值，yes/no
 	char showlog[4];			//参数值，yes/no
 	u32 batch;
+<<<<<<< HEAD
 	u32 idletimeout;			//单位秒
 	u32 switchtime;				//单位秒
+=======
+	u32 idletimeout;			//sec
+	u32 switchtime; 			//sec
+>>>>>>> f324c145d052fa11f479e5398a4620cd82a3c3b5
 };
 
 struct nw_self
