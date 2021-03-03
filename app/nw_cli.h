@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
+#define NGMWAN_GENL_VERSION_NAME "1.0.0.1"
 #define u16 unsigned short
 #define u32 unsigned int
 #define u64 uint64_t
@@ -41,10 +42,6 @@
 #define NW_OPER_SUCCESS		1			//操作成功
 
 
-
-/*errno */
-#define CMDERR -1
-#define SOCKERR -2
 typedef enum nw_mode{
 	NW_MODE_CLIENT = 1,			// client
 	NW_MODE_SERVER = 2   		// server 
@@ -112,6 +109,7 @@ struct nw_other
 	char showlog[4];			//参数值，yes/no
 	u32 batch;
 	u32 idletimeout;			//单位秒
+	u32 switchtime;				//单位秒
 };
 
 struct nw_self
@@ -136,23 +134,26 @@ struct nw_dev_stat
 	u64 recvspeed;			//字节单位
 };
 
-/*
-common
-*/
+/*common*/
 void nw_dev_show_statistic(char  *);
+void nw_dev_show_args(char *);
+/*ioctl*/
 int nw_ioctl(struct nw_oper_head *p);
+/*show*/
 int nw_dev_show(int ,char **);
 int nw_dev_set(int , char **);
 int nw_dev_bindport(int ,char **);
 void nw_usage(void);
 int nw_search_if(char *);
+/*help*/
 void nw_peer_usage();
 void nw_self_usage();
 void nw_mode_usage();
+/*other type ping */
 int nw_other_set(const char *,struct nw_other*);
 int nw_type_set(const char *, struct nw_type *);
 int nw_ping_set(const char *, struct nw_ping *);
-const char* mode_str(nw_mode_t );
+
 /*connect*/
 int nw_dev_connect(int argc, char **argv);
 int nw_dev_close(int argc,char **argv);
@@ -162,6 +163,6 @@ int nw_peer_del(int argc, char **argv);
 int nw_peer_add(int argc ,char **argv);
 int nw_peer_list_del(int argc, char **argv);
 int nw_peer_show(int argc, char **argv);
-
+const char* mode_str(nw_mode_t );
 
 #endif /* _NW_DEVCTL_H */

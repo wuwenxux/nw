@@ -1,16 +1,32 @@
 
 #include "nw_cli.h"
 #include "utils.h"
+#include "nw_err.h"
 #define K  1024
 #define M 1024*1024
+
+
+
+
+
+/*func*/
+static int other_read(char*);
+static int bind_read(char *);
+static int ping_read(char *);
 /*nw usage*/
 void nw_peer_usage(void)
 {
 	fprintf(stderr,"Usage: ...peerid PEERID peerip PEERIP peerport PEERPORT\n"
 					"PEERID: p1 - p255\n"
-					"PEERIP: valid ip add\n"
+					"PEERIP: valid ip addr\n"
 					"PEERPORT: 1- 65535\n");
 	exit(-1);
+}
+void nw_show_usage(void)
+{
+	fprintf(stderr,"Usage:...show dev DEV\n");
+	exit(-1);
+
 }
 void nw_self_usage(void)
 {
@@ -47,6 +63,7 @@ void  nw_usage(void)
 			"								[ idletimeout TIMEINTERVAL ]|\n "
 			"								[ log ]\n "
 			"                     			[ ownid OWNID ]\n "
+			"								[ switchtime SWITCHTIME]\n"
             "				 	 			[ mode { client | server } ]\n "
 			"\n"
 			"	nw show [ DEVICE | dev DEVICE ][status]{ PEERID | peer PEERID }\n"
@@ -54,9 +71,157 @@ void  nw_usage(void)
 			"	nw close [ DEVICE | dev DEVICE ] [ peer PEERID| PEERID ]\n");
 	exit(-1);
 }
+const char *other_str[] =
+{
+	"bufflen",
+	"maxbufflen",
+	"queuelen",
+	"oneclient",
+	"showlog",
+	"batch",
+	"idletimeout",
+	"switchtime",
+	NULL,
+};
 
+const char *cs_ser =
+{
+	"mode",
+	NULL,
+};
+const char *ping_str = 
+{
+	"interval",//ping
+	"timeout",
+	NULL,
+};
+const char *bind_str = 
+{
+	"bindport",
+	NULL,
+};
 
+//all args
+//nw show dev nw1
+int nw_show_dev(int argc, char **argv)
+{
+	char *dev = NULL;
+	int sock;
 
+	int ret,i;
+	u32 *p;
+	if(argc < 2)
+	{
+		nw_usage();
+	}else
+	{
+		NEXT_ARG();
+		if(strcmp(*argv,"dev") == 0)
+			NEXT_ARG();
+		dev = *argv;
+	}
+	if(dev)
+	{
+		ret = other_read(dev);
+		if(ret < 0)
+			return IOCTLERR;
+		ret = bind_read(dev);
+		if(ret < 0)
+			return IOCTLERR;
+		ret = ping_read(dev);
+		if(ret < 0)
+			return IOCTLERR;
+	}
+	return 0;
+	struct nw_bind bind;
+
+	struct nw_ping ping;
+	sock = socket(AF_INET,SOCK_DGRAM,0);
+	if(sock == -1)
+	{
+		perror("create socket error.");
+		setuid(getuid());
+		return SOCKERR;
+	}
+	memset(&bind,0,sizeof(struct nw_bind));
+	memset(&ping,0,sizeof(struct nw_ping));
+	ret = nw_search_if(dev);
+	if(ret <0)
+	{
+		printf( " nw device not found.");
+		return DEV_NOT_FOUND;
+	}
+/*	//other
+	ret = ioctl(sock,NW_OPER,&other_req);
+	if(ret < 0)
+	{
+		fprintf(stderr,"ioctl err.\n");
+		return IOCTLERR;
+	}
+	//ping 
+	strcpy(ping_req.ifr_name,ifname);
+	ping.head.command = NW_COMM_READ;
+	ping.head.type = NW_OPER_PING;
+	strcpy(ping_req.ifr_data,&ping);
+	ret = ioctl(sock,NW_OPER,&ping_req);
+	if(ret < 0)
+	{
+		fprintf(stderr,"ioctl err.\n");
+		return IOCTLERR;
+	}
+	
+	strcpy(bind_req.ifr_name,ifname);
+	bind.head.command = NW_COMM_READ;
+	bind.head.type = NW_OPER_OTHER;
+	strcpy(bind_req.ifr_data,&bind);
+	ret = ioctl(sock,NW_OPER,&bind_req);
+	if(ret == -1)
+	{
+		perror("other ioctl error.");
+		close(sock);
+		return -1;
+	}
+
+	close(sock);
+	printf("\n NW args (%s)\n\n",dev);
+	p = &other.bufflen;
+	for(i = 0 ; other_str[i]; i++,p++)
+	{
+		printf(" %s |%10d\n",other_str[i],*p);
+	}
+	printf("\n");
+	return 0;
+*/
+}
+static int other_read(char *dev)
+{
+	struct ifreq other_req;
+	int i = 0;
+	struct nw_other other;
+	memset(&other,0,sizeof(struct nw_other));
+	strcpy(other.head.devname,dev);
+	other.head.command = NW_COMM_READ;
+	other.head.type = NW_OPER_OTHER;
+	strcpy(other_req.ifr_data,&other);
+
+	u32 *p = &other.batch;
+	for(i = 0 ; other_str[i]; i++,p++)
+	{
+		fprintf(stdout,"%s|%10d\n",other_str[i],*p);
+	}
+	return 0;
+}
+static int bind_read(char *dev )
+{
+	struct ifreq ping_req;
+	struct nw_other other;
+
+	return 0;
+}
+static int ping_read(char *dev)
+{
+	return 0;
+}
 
 const char *dev_stat_str[]=
 {
@@ -74,8 +239,8 @@ const char *dev_stat_str[]=
 	NULL,
 };
 //statistic 
-//nw show dev nw1   
-void nw_dev_show_statistic(char *dev)
+//nw stat dev nw1
+int nw_stat_dev(int argc, char **argv)
 {
 	
 	int sock;
@@ -143,16 +308,24 @@ int nw_dev_show_peers(int argc, char **);
 int nw_dev_connect(int argc, char **argv)
 {	
 	int ret;
-	struct nw_peer_entry *entry = (struct nw_peer_entry*) malloc(sizeof(struct nw_peer_entry));
-	memset(entry,0,sizeof(struct nw_peer_entry));
-	entry->head.type = NW_OPER_PEER;
-	entry->head.command = NW_COMM_PEER_CONNECT;
 	char *dev = NULL;
+	struct nw_peer_entry *entry = calloc(1,sizeof(struct nw_peer_entry));
+	if(entry == NULL)
+	{
+		fprintf(stderr,"calloc error");
+		return MEMERR;
+	}
+	else
+	{
+		entry->head.type = NW_OPER_PEER;
+		entry->head.command = NW_COMM_PEER_CONNECT;
+	}
+
 	while(argc > 0)
 	{
 		if(strcmp(*argv,"help") == 0)
 		{
-			nw_usage();
+			nw_connect_usage();
 		}
 		else{
 			if(strcmp(*argv,"dev") == 0 )
@@ -174,7 +347,11 @@ int nw_dev_connect(int argc, char **argv)
 	}
 	strcpy(entry->head.devname,dev);
 	if( nw_ioctl(&entry) < 0)
+	{
+		free(entry);
 		return -1;
+	}
+	free(entry);
 	return 0;
 }
 
@@ -203,7 +380,7 @@ int main(int argc,char *argv[])
 				matches(*argv,"list") == 0 ||
 				matches(*argv,"lst") == 0 )
 		{
-			return nw_dev_show(argc-1,argv+1);
+			return nw_show_dev(argc-1,argv+1);
 		}
 		else if(matches(*argv,"connect") == 0)
 		{
@@ -212,6 +389,10 @@ int main(int argc,char *argv[])
 		else if(matches (*argv,"add") == 0)
 		{
 			return nw_peer_add(argc-1,argv+1);
+		}
+		else if(matches(*argv,"stat") == 0)
+		{
+			return nw_stat_dev(argc-1,argv+1);
 		}
 		else if (matches(*argv,"del") == 0)
 		{

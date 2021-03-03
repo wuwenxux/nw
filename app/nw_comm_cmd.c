@@ -158,8 +158,8 @@ int nw_ioctl(struct nw_oper_head *head)
 int do_read(struct nw_oper_head *head)
 {
 //	struct nw_oper_head *head;
-	fprintf(stdout,"\n           NW Args (%s)   \n",head->devname);
-	fprintf(stdout,"--------------------------------\n");
+	fprintf(stdout,"\n           NW args (%s)   \n",head->devname);
+	fprintf(stdout,"-----------------------------------------\n");
 	if(head->type == NW_OPER_PEER)
 	{
 		struct nw_peer_entry *entry = (struct nw_peer_entry *) head;
@@ -169,35 +169,25 @@ int do_read(struct nw_oper_head *head)
 		{
 			if(inet_ntop(AF_INET,&entry->ip[i],ipv4,16) < 0)
 				return -1;
-			fprintf(stdout," peerid[%d]\t%-16s  \n",i,entry->peerid[i]);
-		//	fprintf(stdout,"-----------------------------------------\n");
-			fprintf(stdout," peerip    \t%-16s  \n",ipv4);
-		//	fprintf(stdout,"-----------------------------------------\n");
-			fprintf(stdout," peerport  \t%-16d  \n",entry->port[i]);
-			fprintf(stdout,"--------------------------------\n");
+			fprintf(stdout,"peerid[%d] %s peerip %s peerport %d\n",i,entry->peerid[i],ipv4,entry->port[i]);
 		}
-	}else if(head->type == NW_OPER_SELF)
+		fprintf(stdout,"-----------------------------------------\n");
+	}else if(head->type == NW_OPER_BIND)
 	{
-			struct nw_self  *self = (struct nw_self *)head;
-			fprintf(stdout," ownid    \t%-10s\n",self->peerid);
-			fprintf(stdout,"--------------------------------\n");
-	}
-	else if(head->type == NW_OPER_BIND)
-	{
-			struct nw_bind *bind = (struct nw_bind *) head;
-			fprintf(stdout," bindport \t%-10d\n",bind->port);
-			fprintf(stdout,"-----------------------------------------\n");
+		struct nw_bind *bind = (struct nw_bind *) head;
+		fprintf(stdout,"|       bindport       |   %10d   |\n",bind->port);
+		fprintf(stdout,"-----------------------------------------\n");
 	}else if (head->type == NW_OPER_PING)
 	{
-			struct nw_ping *ping = (struct nw_ping *)head;
-			fprintf(stdout," interval \t%-10d\n",ping->interval);
-			fprintf(stdout,"-----------------------------------------\n");
-			fprintf(stdout," timeout  \t%-10d\n",ping->timeout);
+		struct nw_ping *ping = (struct nw_ping *)head;
+		fprintf(stdout,"|       interval       |   %10d   |\n",ping->interval);
+		fprintf(stdout,"-----------------------------------------\n");
+		fprintf(stdout,"|       timeout        |   %10d   |\n",ping->timeout);
 	}else if(head->type == NW_OPER_TYPE)
 	{
-			struct nw_type *type = (struct nw_type *)head;
-			fprintf(stdout," mode     \t%-10s\n",mode_str(type->mode));
-			fprintf(stdout,"-----------------------------------------\n");
+		struct nw_type *type = (struct nw_type *)head;
+		fprintf(stdout,"|       mode       |   %10s       |\n",mode_str(type->mode));
+		fprintf(stdout,"-----------------------------------------\n");
 	}else if(head->type == NW_OPER_DEVSTAT )
 	{
 		char *dev = NULL;
@@ -206,61 +196,60 @@ int do_read(struct nw_oper_head *head)
 		ret = nw_search_if(dev);
 		if(ret)
 			fprintf(stderr,"dev not found.");
-		nw_dev_show_statistic(dev);
+		nw_stat_dev(dev);
 	}
-	else if(head->type == NW_OPER_OTH  ER )
+	else if(head->type == NW_OPER_OTHER )
 	{
 		struct nw_other *other = (struct nw_other *)head;
 		if(other->bufflen)
 		{
-			fprintf(stdout," bufflen    \t%d\n",other->bufflen);
-		}
+			fprintf(stdout,"|       bufflen       |   %10d    |\n",other->bufflen);
+			fprintf(stdout,"-----------------------------------------\n");
+	}
 		if(other->maxbufflen)
 		{
-			fprintf(stdout," maxbufflen \t%d\n",other->maxbufflen);
+			fprintf(stdout,"|      maxbufflen     |   %10d    |\n",other->maxbufflen);
+			fprintf(stdout,"-----------------------------------------\n");
 		}
 		if(strcmp(other->oneclient,"yes") == 0 || strcmp(other->oneclient,"no") == 0)
 		{
-			fprintf(stdout," oneclient  \t%s\n",other->oneclient);
+			fprintf(stdout,"|       oneclient     |   %10s    |\n",other->oneclient);
+			fprintf(stdout,"-----------------------------------------\n");
 		}	
 		if(strcmp(other->showlog,"yes") == 0 || strcmp(other->showlog,"no") == 0)
 		{
-			fprintf(stdout," showlog    \t%s\n",other->showlog);
+			fprintf(stdout,"|       showlog       |   %10s    |\n",other->showlog);
+			fprintf(stdout,"-----------------------------------------\n");	
 		}
 		if(other->queuelen)
 		{
-			fprintf(stdout," queuelen   \t%d\n",other->queuelen);
+			fprintf(stdout,"|      queuelen       |   %10d    |\n",other->queuelen);
+			fprintf(stdout,"-----------------------------------------\n");	
 		}
 		if(other->idletimeout)
 		{
-			fprintf(stdout," idletimeout\t%d\n",other->idletimeout);
+			fprintf(stdout,"|     idletimeout     |   %10d    |\n",other->idletimeout);
+			fprintf(stdout,"-----------------------------------------\n");	
 		}	
 		if(other->batch)
 		{
-			fprintf(stdout," batch      \t%d\n",other->batch);
+			fprintf(stdout,"|      batch          |   %10d    |\n",other->batch);
+			fprintf(stdout,"-----------------------------------------\n");	
 		}
-			fprintf(stdout,"--------------------------------\n");	
 	}
 }
 
 int nw_dev_show(int argc, char **argv)
 {
     int ret;
+	
     
     return 0;
 }
+
+
 int nw_self_ownid(const char *dev, char *ownid)
 {
-	struct nw_self own;
-	memset(&own,0,sizeof(own));
-	own.head.type = NW_OPER_SELF;
-	own.head.command  = NW_COMM_SET;
-	strcpy(own.peerid,ownid);
-	strcpy(own.head.devname,dev);
-	if(nw_ioctl((struct nw_oper_head *)&own) < 0)
-	{
-		return -1;	
-	}
 	return 0;
 }
 int nw_dev_set(int argc, char **argv)
@@ -269,15 +258,16 @@ int nw_dev_set(int argc, char **argv)
 	struct nw_bind bind;
 	struct nw_type mo;
 	struct nw_ping ping;
+	struct nw_self self;
 	bool do_ping = false;
 	char *dev = NULL;
-	char *ownid = NULL;
 	int ret ;
 
 	memset(&other,0,sizeof(struct nw_other));
 	memset(&bind,0,sizeof(struct nw_bind));
 	memset(&mo,0,sizeof(struct nw_type));
 	memset(&ping,0,sizeof(struct nw_ping));
+	memset(&self,0,sizeof(struct nw_self));
 
 	while(argc > 0)
 	{
@@ -366,15 +356,18 @@ int nw_dev_set(int argc, char **argv)
 		else if(matches(*argv,"timeout") == 0)
 		{
 			NEXT_ARG();
-			if(get_unsigned(&ping.timeout,*argv,0) )
+			if(get_unsigned(&ping.timeout,*argv,0) ||ping.timeout < ping.interval)
 				invarg("Invalid \"timeout \" value\n",*argv);
 			do_ping = true;
 		}else if(matches(*argv,"ownid") == 0)
 		{
 			NEXT_ARG();
-			if(ownid)
-				duparg("ownid",*argv);
-			ownid = *argv;
+			strcpy(self.peerid,*argv);
+		}else if(matches(*argv,"switchtime") == 0)
+		{
+			NEXT_ARG();
+			if(get_unsigned(&other.switchtime,*argv,0))
+				invarg("Invalid \"switchout\" value\n",*argv);
 		}
 		else{
 			if(strcmp(*argv,"dev") == 0 )
@@ -414,11 +407,6 @@ int nw_dev_set(int argc, char **argv)
 	{
 		if(nw_ping_set(dev,&ping) < 0)
 			return -1;
-	}
-	if(strlen(ownid) != 0)
-	{
-		if(nw_self_ownid(dev,ownid) < 0)
-			return -1; 
 	}
 	return 0 ;
 }

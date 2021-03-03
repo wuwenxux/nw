@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "nw_cli.h"
+#include "nw_err.h"
 
 const char* peer_status_str[] =
 {
@@ -29,7 +30,10 @@ int nw_peer_change(int argc, char **argv)
 	char *peerip = NULL;
 	struct nw_peer_entry *entry = (struct nw_peer_entry *)calloc(1,sizeof(struct nw_peer_entry));
 	if(entry == NULL)
-		return 0;
+	{
+		fprintf(stderr,"\ncalloc error.");
+		return MEMERR;
+	}
 	while(argc > 0)
 	{
 		if(strcmp(*argv,"peerid") == 0)
@@ -74,10 +78,11 @@ int nw_peer_change(int argc, char **argv)
 			strcpy(entry->peerid[0],peerid);
 		if(nw_do_change(dev,entry) < 0)
 		{
-				free(entry);
-				return -1;	
+			free(entry);
+			return -1;	
 		}
 	}
+	free(entry);
 	return 0;
 }
 
@@ -94,21 +99,28 @@ static int nw_do_change(const char *dev,struct nw_peer_entry *npe)
 	return 0;
 }
   
-//dev nw1 peerid p1  
+//dev nw1 peerid p1,p2,p3
 int nw_peer_del(int argc, char ** argv)
 {
-	struct nw_peer_entry entry;
-	memset(&entry,0,sizeof(struct nw_peer_entry));
-	int ret,i;
+	struct nw_peer_entry *entry = calloc(1,sizeof(struct nw_peer_entry));
+	int ret,i=0;
+	char *cur = NULL;
 	char *dev = NULL;
 	while(argc > 0)
 	{
 		if(strcmp(*argv,"peerid") == 0)
 		{
 			NEXT_ARG();
-			if(entry.peerid)
-				duparg(entry.peerid,*argv);
-			strcpy(entry.peerid[0],*argv);
+			if(strlen(*argv) == 0)
+				return PEERIDERR;
+			else
+			{
+				for(cur = strtok(*argv,",");cur != NULL;cur=strtok(NULL,","),i++)
+				{
+					strcpy(entry->peerid[i],cur);
+				}
+				entry->count = i;
+			}
 		}else 
 		{
 			if(strcmp(*argv,"dev") == 0)
@@ -119,7 +131,7 @@ int nw_peer_del(int argc, char ** argv)
 				duparg2("dev",*argv);
 			if(check_ifname(*argv))
 				invarg("\"dev\" not a valid ifname", *argv);
-			dev =*argv;
+			dev = *argv;
 		}
 		argc--;	argv++;
 	}
@@ -128,11 +140,16 @@ int nw_peer_del(int argc, char ** argv)
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
 		exit(-1);
 	}
-	if(entry.peerid)
+	if(entry->count)
 	{
-		if(nw_do_del(dev,(struct nw_oper_head*)&entry) < 0)
-			return -1;
+
+		if(nw_do_del(dev,(struct nw_oper_head*)entry) < 0)
+		{
+			free(entry);
+			return PEERDELERR;
+		}
 	}
+	free(entry);
 	return 0;
 }
 static int nw_do_add(const char *dev,struct nw_peer_entry *npe)
@@ -152,7 +169,6 @@ static int nw_do_del(const char *dev,struct nw_peer_entry *npe)
 {
 	int ret;
 	strncpy(npe->head.devname,dev,IFNAMSIZ);
-	npe->count = 1;
 	npe->head.command = NW_COMM_PEER_DEL;
 	npe->head.type = NW_OPER_PEER;
 	ret = nw_ioctl(npe);
@@ -226,15 +242,15 @@ int nw_peer_add(int argc, char ** argv)
 //type:NW_OPER_PEER command:NW_COMM_PEER_DEL
 /*int nw_peer_list_del(int argc, char **argv)
 {
-	struct nw_peer_entry peer;
+	struct nw_peer_entry *peer = calloc(1,sizeof(struct nw_peer_entry));
 	int ret,i;
 	char token[MAX_PEER_NUMBER][MAX_PEERNAME_LENGTH];
+	memset(token,0,sizeof(token));
 	char *p,
 		 *save_p =NULL,
 		  **err = NULL;
-	memset(&peer,0,sizeof(struct nw_peer_entry));
-	memset(token,0,sizeof(token));
-	peer.count = i;
+
+	peer->count = i;
 	peer.head.type =NW_OPER_PEER;
 	peer.head.command=NW_COMM_PEER_DEL;
 	ret = nw_peer_ioctl(&peer);
@@ -243,8 +259,7 @@ int nw_peer_add(int argc, char ** argv)
 			printf("ioctl err.\n");
 	}
 	return ret;
-}
-*/
+}*/
 // dev nw1 peerid 
 //type:NW_OPER_PEER command:NW_COMM_PEER_LIST
 int nw_peer_show(int argc, char **argv)
