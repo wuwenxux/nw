@@ -8,11 +8,12 @@
 
 
 
-
-/*func*/
-static int other_read(char*);
-static int bind_read(char *);
-static int ping_read(char *);
+/*nw ver*/
+void nw_ver(void)
+{
+	fprintf(stdout,"nw version code :%s\n",NGMWAN_GENL_VERSION_NAME);
+	exit(-1);
+}
 /*nw usage*/
 void nw_peer_usage(void)
 {
