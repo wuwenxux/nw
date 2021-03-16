@@ -2,7 +2,7 @@
 CC     = gcc
 CFLAGS = -O2 -g
 TARGET = nw
-OBJS   = nw_cli.o utils.o nw_comm_cmd.o nw_other_cmd.o nw_peer_cmd.o 
+OBJS   = nw_cli.o utils.o nw_rw_ioctl.o nw_other_cmd.o nw_peer_cmd.o 
 
 .SUFFIXES: .c .o
 
