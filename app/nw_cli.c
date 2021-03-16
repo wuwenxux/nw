@@ -214,35 +214,20 @@ static void other_print(struct nw_other *other,bool is_other[])
 	if(is_other[3])
 		fprintf(stdout,"oneclient  \t%-10s    \n",strcmp(other->oneclient,"yes")==0?"yes":"no");
 	if(is_other[4])
-		fprintf(stdout,"showlog    \t%-10s    \n",strcmp(other->showlog,"yes")==0?"yes":"no");
+		fprintf(stdout,"log    	   \t%-10s    \n",strcmp(other->showlog,"yes")==0?"yes":"no");
 	if(is_other[5])
 		fprintf(stdout,"batch      \t%-10d    \n",other->batch?other->batch:0);
 	if(is_other[6])
 		fprintf(stdout,"idletimeout\t%-10d    \n",other->idletimeout);
 	if(is_other[7])
-		fprintf(stdout,"switchtime\t%-10d     \n",other->switchtime);
+		fprintf(stdout,"switchtime \t%-10d     \n",other->switchtime);
 }
 static void ping_print(struct nw_ping *ping,bool is_ping[])
 {
 	if(is_ping[0])
-		fprintf(stdout,"interval    \t%-10u    \n",ping->interval);
+		fprintf(stdout,"interval   \t%-10d   \n",ping->interval);
 	if(is_ping[1])
-		fprintf(stdout,"timeout   	\t%-10u    \n",ping->timeout);
-}
-char ** init_peers(char *input)
-{
-	char **option = malloc(MAX_PEER_NUMBER*sizeof(char *));
-	for(int i = 0; i < MAX_PEER_NUMBER ;i ++)
-	 	option[i] = malloc(MAX_PEERNAME_LENGTH);
-	return option;
-}
-void free_peers(char **peers)
-{
-	for(int i = 0 ; i < MAX_PEER_NUMBER; i++)
-	{
-		free(peers[i]);
-	}
-	free(peers);
+		fprintf(stdout,"timeout    \t%-10d   \n",ping->timeout);
 }
 static void peer_print(struct nw_peer_entry *entry,char *id)
 {
@@ -258,7 +243,7 @@ static void peer_print(struct nw_peer_entry *entry,char *id)
 			{
 					if(inet_ntop(AF_INET,&entry->ip[i],ipv4,16) < 0)
 						return -1;
-					fprintf(stdout,"peerid[%d] %s peerip %s peerport %d\n",i,entry->peerid[i],ipv4,entry->port[i]);
+					fprintf(stdout,"%-5d\t%-5s\t%-16s%-10u\n",i,entry->peerid[i],ipv4,entry->port[i]);
 			}
 			
 		}
@@ -269,6 +254,7 @@ static void peer_print(struct nw_peer_entry *entry,char *id)
 int nw_dev_show(int argc, char **argv)
 {
 	char *dev = NULL;
+	char *peers = NULL;
 	int ret = 0,i;
 	bool mptcp = false;
 	bool peer_list = false;
@@ -290,7 +276,7 @@ int nw_dev_show(int argc, char **argv)
 	memset(&other,0,sizeof(struct nw_other));
 	memset(&ping,0,sizeof(struct nw_ping));
 	memset(&bind,0,sizeof(struct nw_bind));
-
+	
 	while(argc > 0)
 	{
 		if(strcmp(*argv,"bufflen") == 0)
@@ -338,18 +324,14 @@ int nw_dev_show(int argc, char **argv)
 		}else if (strcmp(*argv,"peerid") == 0)
 		{
 			peer_id = true;
-
 			if(!NEXT_ARG_OK() || strlen(*argv) == 0)
 			{
 				fprintf(stderr,"peerid is expected.\n");
+				free(entry);
 				exit(EXIT_FAILURE);
 			}
 			NEXT_ARG();
-			ret = nw_do_peer_list(dev,entry);
-			for( i = 0,cur = strtok(*argv,","); cur != NULL; cur = strtok(NULL,","), i++)
-			{
-				peer_print(&entry->head,cur);
-			}
+			peers = *argv;
 		}
 		else
 		{
@@ -369,6 +351,7 @@ int nw_dev_show(int argc, char **argv)
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
 		exit(-1);
 	}
+	fprintf(stdout,"-------------%s-------------\n",dev);
 	if(!is_other(r_other) && !r_bind && !r_type && !r_ping[0] && !r_ping[1] && !peerid && !peer_list  && !peer_id)
 	{
 		ret = nw_other_read(dev,&other);
@@ -405,6 +388,15 @@ int nw_dev_show(int argc, char **argv)
 	{
 		ret = nw_do_peer_list(dev,entry);
 		do_read(&entry->head);
+	}
+	if(peer_id&& strlen(peers) > 0)
+	{
+		ret = nw_do_peer_list(dev,entry);
+		fprintf(stdout,"No.\tid\tpeerip\t\tpeerport\n");
+		for( i = 0,cur = strtok(peers,","); cur != NULL; cur = strtok(NULL,","), i++)
+		{
+				peer_print(&entry->head,cur);
+		}
 	}
 	free(entry);
 	return ret;
@@ -577,7 +569,7 @@ int nw_dev_set(int argc, char **argv)
 		sprintf(mptcp_on,"ip link set %s mptcp on",dev);
 		system(mptcp_on);
 	}
-//	fprintf(stderr,"Not enough information. \"type\" information is required.");
+	printf("Success!\n");
 	return 0 ;
 }
 const char *dev_stat_str[]=
@@ -696,6 +688,7 @@ int nw_dev_connect(int argc, char **argv)
 	if(!dev)
 	{
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
+		free(entry);
 		exit(-1);
 	}
 	strcpy(entry->head.devname,dev);
@@ -735,7 +728,7 @@ int main(int argc,char *argv[])
 		}
 		else if(matches(*argv,"connect") == 0||matches(*argv,"conn")== 0)
 		{
-				return nw_dev_connect(argc-1,argv+1);
+			return nw_dev_connect(argc-1,argv+1);
 		}
 		else if(matches (*argv,"add") == 0)
 		{
@@ -762,5 +755,5 @@ int main(int argc,char *argv[])
 		}
 	}
 	fprintf(stderr, "Command \"%s\" is unknown, try \"nw help\".\n",*argv);
-	exit(-1);
+	return 0;
 }

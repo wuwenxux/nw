@@ -17,7 +17,15 @@ const char* peer_status_str[] =
 	"recvspeed",
 	NULL,
 };
-
+int nw_do_connect(const char *dev, struct nw_peer_entry *entry)
+{
+	int ret;
+	strcpy(entry->head.devname,dev);
+	entry->head.command = NW_COMM_SET;
+	entry->head.type = NW_COMM_PEER_CONNECT;
+	ret = nw_ioctl(&entry->head);
+	return ret;
+}
 int nw_do_peer_list(const char *dev ,struct nw_peer_entry *entry)
 {
 	int ret;
@@ -103,23 +111,16 @@ int nw_peer_change(int argc, char **argv)
 		free(entry);
 		exit(-1);
 	}
-	if(peerip||peerid)
+	if(peerid)
 	{
-		if(peerip)
-		{
-			ret = inet_pton(AF_INET,peerip,&entry->ip[0]);
-			if( ret < 0)
-			{
-				free(entry);
-				return -1;
-			}
-		}
-		if(peerid)
-			strcpy(entry->peerid[0],peerid);
+		strcpy(entry->peerid[0],peerid);
 		if(nw_do_change(dev,entry) < 0)
 		{
 			free(entry);
 			return -1;	
+		}else
+		{
+			printf("Success!\n");
 		}
 	}
 	free(entry);
@@ -179,7 +180,10 @@ int nw_peer_del(int argc, char ** argv)
 			free(entry);
 			return PEERDELERR;
 		}
+		else 
+			printf("Success!");
 	}
+
 	free(entry);
 	return 0;
 }
@@ -187,11 +191,9 @@ int nw_peer_del(int argc, char ** argv)
 //[dev] nw1 peerid PEERID peerip PEERIP  peerpot PORT
 int nw_peer_add(int argc, char ** argv)
 {
-	struct nw_peer_entry entry ;
-	memset(&entry,0,sizeof(struct nw_peer_entry));
-//	= calloc(1,sizeof(struct nw_peer_entry));
-//	if(entry == NULL)
-//		return -1;
+	struct nw_peer_entry *entry = calloc(1,sizeof(struct nw_peer_entry));
+	if(entry == NULL)
+		return -1;
 	int ret;
 	char *dev =NULL;
 	char *id = NULL;
@@ -233,18 +235,23 @@ int nw_peer_add(int argc, char ** argv)
 	if(!dev)
 	{
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
-		ret =-1;
+		free(entry);
+		return -1;
 	}
 	if(ip && strlen(id) &&port )
 	{
-		strcpy(entry.peerid[0],id);
-		inet_pton(AF_INET,ip,&entry.ip[0]);		
-		entry.port[0] = port;
+		strcpy(entry->peerid[0],id);
+		inet_pton(AF_INET,ip,&entry->ip[0]);		
+		entry->port[0] = port;
 		if(nw_do_add(dev,&entry) < 0)
 		{
+			free(entry);
 			return -1;
+		}else 
+		{
+			printf("Success!\n");
 		}
 	}
-	//free(entry);
+	free(entry);
 	return 0;
 }

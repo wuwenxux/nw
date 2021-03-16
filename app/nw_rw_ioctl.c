@@ -90,7 +90,6 @@ int nw_ioctl(struct nw_oper_head *head)
 	sock = socket(AF_INET,SOCK_DGRAM,0);
     if(!sock)
     {
-		printf("sock err=%d.\n",errno);
         return -1;
     }
     ret = ioctl(sock,NW_OPER,&req);
@@ -134,6 +133,7 @@ int nw_search_if( char *dev)
 			{
 				printf("cmd error\n");
 				pclose(fp);
+				return -1;
 			}
 			if(strncmp(&n[1],"nw",2) == 0)
 			{
@@ -154,11 +154,12 @@ void do_read(struct nw_oper_head *head)
 		struct nw_peer_entry *entry = (struct nw_peer_entry *) head;
 		char ipv4[16];
 		int i;
+		fprintf(stdout,"No.   id\tpeerip\t\tpeerport\n");
 		for(i = 0 ; i < entry->count ; i++)
 		{
 			if(inet_ntop(AF_INET,&entry->ip[i],ipv4,16) < 0)
 				return -1;
-			fprintf(stdout,"peerid[%d] %s peerip %s peerport %d\n",i,entry->peerid[i],ipv4,entry->port[i]);
+			fprintf(stdout,"%-5d %-10s%-16s%-10u\n",i,entry->peerid[i],ipv4,entry->port[i]);
 		}
 	}else if(head->type == NW_OPER_BIND)
 	{
@@ -168,7 +169,7 @@ void do_read(struct nw_oper_head *head)
 	{
 		struct nw_ping *ping = (struct nw_ping *)head;
 		fprintf(stdout,"interval   \t%-10d   \n",ping->interval);
-		fprintf(stdout,"timeout    \t%-10d    \n",ping->timeout);
+		fprintf(stdout,"timeout    \t%-10d   \n",ping->timeout);
 	}else if(head->type == NW_OPER_TYPE)
 	{
 		struct nw_type *type = (struct nw_type *)head;
@@ -189,7 +190,7 @@ void do_read(struct nw_oper_head *head)
 		fprintf(stdout,"bufflen    \t%-10d    \n",other->bufflen);
 		fprintf(stdout,"maxbufflen \t%-10d    \n",other->maxbufflen);
 		fprintf(stdout,"oneclient  \t%-10s    \n",strcmp(other->oneclient,"yes")== 0?"yes":"no");
-		fprintf(stdout,"showlog    \t%-10s    \n",strcmp(other->showlog,"yes") ==0?"yes":"no");
+		fprintf(stdout,"log   	   \t%-10s    \n",strcmp(other->showlog,"yes") ==0?"yes":"no");
 		fprintf(stdout,"queuelen   \t%-10d    \n",other->queuelen);
 		fprintf(stdout,"idletimeout\t%-10d    \n",other->idletimeout);
 		fprintf(stdout,"batch      \t%-10d    \n",other->batch?other->batch:0);
