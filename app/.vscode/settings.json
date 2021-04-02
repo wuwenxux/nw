@@ -1,6 +1,8 @@
+
 {
+    "C_Cpp.errorSquiggles": "Disabled",
     "files.associations": {
-        "err.h": "c",
-        "nw_cli.h": "c"
+        "typeinfo": "cpp",
+        "cstdlib": "c"
     }
 }

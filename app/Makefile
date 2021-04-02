@@ -1,8 +1,8 @@
 # nwcli Makefile
 CC     = gcc
-CFLAGS = -O2 -g
+CFLAGS = -Wall
 TARGET = nw
-OBJS   = nw_cli.o utils.o nw_rw_ioctl.o nw_other_cmd.o nw_peer_cmd.o 
+OBJS   = nw_cli.o utils.o nw_rw_ioctl.o nw_peer_cmd.o nw_conf.o
 
 .SUFFIXES: .c .o
 

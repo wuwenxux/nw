@@ -1,5 +1,5 @@
-#ifndef _MANAGE_H
-#define _MANAGE_H
+#ifndef _NGMWAN_DEVCTL_H
+#define _NGMWAN_DEVCTL_H
 
 #include <string.h>
 #include <stdlib.h>
@@ -10,7 +10,8 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
-#define NGMWAN_GENL_VERSION_NAME "1.0.0.1"
+#include <unistd.h>
+
 #define u16 unsigned short
 #define u32 unsigned int
 #define u64 uint64_t
@@ -19,7 +20,7 @@
 #define MAX_PEER_NUMBER 256
 
 #define NW_OPER	(SIOCDEVPRIVATE + 1)
-/* TYPE */
+
 #define NW_OPER_PEER		0x01		//peer设置和读取
 #define NW_OPER_PEERSTATUS	0x02		//peer的状态
 #define NW_OPER_TYPE		0x03		//peer类型，服务端/客户端
@@ -28,7 +29,7 @@
 #define NW_OPER_OTHER		0x06		//其它参数
 #define NW_OPER_SELF		0x07		//本端的peerid
 #define NW_OPER_DEVSTAT		0x08		//网卡统计数据
-/* command */
+
 #define NW_COMM_READ			0		//读取参数
 #define NW_COMM_SET				1		//设置参数
 #define NW_COMM_PEER_ADD		2		//增加peer，重复就替换
@@ -40,10 +41,6 @@
 
 #define NW_OPER_FAIL		0			//操作失败
 #define NW_OPER_SUCCESS		1			//操作成功
-
-#define NW_MODE_SERVER 		1
-#define NW_MODE_CLIENT  	2
-
 
 struct nw_oper_head
 {
@@ -65,7 +62,7 @@ struct nw_peer_entry
 struct nw_peer_status
 {
 	struct nw_oper_head head;
-	u32 count;								//peer总数
+	u32 count;				//peer总数
 	char peerid[MAX_PEER_NUMBER][MAX_PEERNAME_LENGTH];
 	u32 ip[MAX_PEER_NUMBER];				//当前连接的peer端的IP地址
 	u16 port[MAX_PEER_NUMBER];				//当前连接的peer端的端口
@@ -78,10 +75,11 @@ struct nw_peer_status
 	u64 recvbytes[MAX_PEER_NUMBER];			//字节单位
 	u64 recvspeed[MAX_PEER_NUMBER];			//字节单位
 };
+
 struct nw_type
 {
 	struct nw_oper_head head;
-	u32 mode;			//1-server,2-client
+	u32 mode;			//2-server,1-client
 };
 
 struct nw_bind
@@ -96,12 +94,13 @@ struct nw_ping
 	u32 interval;			//毫秒单位，必须是100毫秒的整数倍
 	u32 timeout;			//毫秒单位，必须是100毫秒的整数倍
 };
+
 struct nw_other
 {
 	struct nw_oper_head head;
 	//设置的时候，下面某个参数值为0，就是忽略该参数。只设置非0值的参数。
 	u32 bufflen;
-	u32 maxbufflen;
+	u32 budget;
 	u32 queuelen;
 	char oneclient[4];			//参数值，yes/no
 	char showlog[4];			//参数值，yes/no
@@ -132,4 +131,4 @@ struct nw_dev_stat
 	u64 recvspeed;			//字节单位
 };
 
-#endif /* _MANAGE_H */
+#endif /* _NGMWAN_DEVCTL_H */

@@ -2,6 +2,61 @@
 #include "utils.h"
 #include "nw_err.h"
 #include "manage.h"
+#include <err.h>
+/*peer ioctl*/
+//dev connect peerid
+int nw_do_connect(const char *dev, struct nw_peer_entry *entry)
+{
+	int ret;
+	strcpy(entry->head.devname,dev);
+	entry->head.command = NW_COMM_SET;
+	entry->head.type = NW_COMM_PEER_CONNECT;
+	ret = nw_ioctl(&entry->head);
+	return ret;
+}
+//show dev peer
+int nw_do_peer_list(const char *dev ,struct nw_peer_entry *entry)
+{
+	int ret;
+	strcpy(entry->head.devname,dev);
+	entry->head.command = NW_COMM_PEER_LIST;
+	entry->head.type = NW_OPER_PEER;
+	ret = nw_ioctl(&entry->head);
+	return ret;
+}
+//add dev peerid
+int nw_do_add(const char *dev,struct nw_peer_entry *npe)
+{
+	int ret;
+	strncpy(npe->head.devname,dev,IFNAMSIZ);
+	npe->count = 1;
+	npe->head.command =  NW_COMM_PEER_ADD;
+	npe->head.type = NW_OPER_PEER;
+	ret = nw_ioctl((struct nw_oper_head*)npe);
+	return ret;
+}
+//change dev peer
+int nw_do_change(const char *dev,struct nw_peer_entry *npe)
+{
+	int ret;
+	strncpy(npe->head.devname,dev,IFNAMSIZ);
+	npe->count = 1;
+	npe->head.command = NW_COMM_PEER_CHANGE;
+	npe->head.type = NW_OPER_PEER;
+	ret = nw_ioctl((struct nw_oper_head *)npe);
+	return ret;
+}
+//del dev peerid 
+int nw_do_del(const char *dev,struct nw_peer_entry *npe)
+{
+	int ret;
+	strncpy(npe->head.devname,dev,IFNAMSIZ);
+	npe->head.command = NW_COMM_PEER_DEL;
+	npe->head.type = NW_OPER_PEER;
+	ret = nw_ioctl((struct nw_oper_head *)npe);
+	return ret;
+}
+/*ping,bind,other,type,self read ioctl*/
 int nw_ping_read(const char *dev ,struct nw_ping *ping)
 {
 	int ret;
@@ -42,6 +97,16 @@ int nw_type_read(const char *dev, struct nw_type* type)
 	ret = nw_ioctl(&type->head);
 	return ret;
 }
+int nw_self_read(const char *dev, struct nw_self*self)
+{
+	int ret;
+	strncpy(self->head.devname,dev,IFNAMSIZ);
+	self->head.type = NW_OPER_SELF;
+	self->head.command = NW_COMM_READ;
+	ret = nw_ioctl(&self->head);
+	return ret;
+}
+/*other,ping,bind,type,sef set ioctl*/
 int nw_other_set(const char *dev,struct nw_other* other)
 {
 	int ret ;
@@ -78,6 +143,15 @@ int nw_ping_set(const char *dev, struct nw_ping *ping)
 	ret = nw_ioctl(&ping->head);
 	return ret;
 }
+int nw_self_set(const char *dev, struct nw_self*self)
+{
+	int ret;
+	strncpy(self->head.devname,dev,IFNAMSIZ);
+	self->head.type = NW_OPER_SELF;
+	self->head.command = NW_COMM_SET;
+	ret = nw_ioctl(&self->head);
+	return ret;
+}
 int nw_ioctl(struct nw_oper_head *head)
 {
     struct ifreq req;
@@ -95,9 +169,9 @@ int nw_ioctl(struct nw_oper_head *head)
     ret = ioctl(sock,NW_OPER,&req);
     if(ret) 
 	{
-			printf("ioctl err=%d.\n",errno);
-			close(sock);
-			return -1;
+		printf("ioctl err.not a valid input\n");
+		close(sock);
+		return -1;
 	}
 	close(sock);
 	return !head->result;
@@ -106,7 +180,7 @@ int nw_search_if( char *dev)
 {
 	FILE *fp;
 	char buf[512];
-	char *cmdline = "/sbin/ip link";
+	char *cmdline = "ip link";
 	char *i,*n;
 	if((fp = popen(cmdline,"r")) == NULL)
 	{
@@ -157,9 +231,8 @@ void do_read(struct nw_oper_head *head)
 		fprintf(stdout,"No.   id\tpeerip\t\tpeerport\n");
 		for(i = 0 ; i < entry->count ; i++)
 		{
-			if(inet_ntop(AF_INET,&entry->ip[i],ipv4,16) < 0)
-				return -1;
-			fprintf(stdout,"%-5d %-10s%-16s%-10u\n",i,entry->peerid[i],ipv4,entry->port[i]);
+			inet_ntop(AF_INET,&entry->ip[i],ipv4,16);
+			fprintf(stdout,"%-5d %-10s%-16s%-10u\n",i+1,entry->peerid[i],ipv4,entry->port[i]);
 		}
 	}else if(head->type == NW_OPER_BIND)
 	{
@@ -178,36 +251,38 @@ void do_read(struct nw_oper_head *head)
 	{
 		char *dev = NULL;
 		int ret ;
-		struct nw_dev_stat *stat = (struct nw_dev_stat*)head;
+//		struct nw_dev_stat *stat = (struct nw_dev_stat*)head;
 		ret = nw_search_if(dev);
 		if(ret)
 			fprintf(stderr,"dev not found.");
-		nw_stat_dev(dev);
+//		nw_stat_dev(dev);
 	}
 	else if(head->type == NW_OPER_OTHER )
 	{
 		struct nw_other *other = (struct nw_other *)head;
 		fprintf(stdout,"bufflen    \t%-10d    \n",other->bufflen);
-		fprintf(stdout,"maxbufflen \t%-10d    \n",other->maxbufflen);
+		fprintf(stdout,"budget 	   \t%-10d    \n",other->budget);
 		fprintf(stdout,"oneclient  \t%-10s    \n",strcmp(other->oneclient,"yes")== 0?"yes":"no");
 		fprintf(stdout,"log   	   \t%-10s    \n",strcmp(other->showlog,"yes") ==0?"yes":"no");
 		fprintf(stdout,"queuelen   \t%-10d    \n",other->queuelen);
 		fprintf(stdout,"idletimeout\t%-10d    \n",other->idletimeout);
 		fprintf(stdout,"batch      \t%-10d    \n",other->batch?other->batch:0);
+		fprintf(stdout,"switchtime \t%-10d	  \n",other->switchtime);
+	}else if(head->type == NW_OPER_SELF)
+	{
+		struct nw_self *self = (struct nw_self *) head;
+		fprintf(stdout,"ownid	   \t%-10s	  \n",self->peerid);
 	}
 	return ;
 }
 
-int nw_self_ownid(const char *dev, char *ownid)
-{
-	return 0;
-}
 int nw_dev_del(int argc, char **argv)
 {
     return 0;
 }
 int nw_dev_close(int argc, char **argv)
 {
+	/*
 	char *dev = NULL;
 	if(argc > 2)
 	{
@@ -223,6 +298,6 @@ int nw_dev_close(int argc, char **argv)
 	if(check_ifname(*argv))
 			invarg("\"dev\" not a valid ifname",*argv);
 	dev = *argv;
-
-    return 0;
+    */
+	return 0;
 }

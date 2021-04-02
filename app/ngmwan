@@ -1,0 +1,5 @@
+config interface 'nw1'
+
+config interface 'nw2'
+
+config interface 'nw3'

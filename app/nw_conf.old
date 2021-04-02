@@ -1,0 +1,23 @@
+#ifndef _NW_CONF_H_
+#define _NW_CONF_H_
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+struct nw_read_conf_file{
+    char *name;
+    struct nw_read_section *sections;
+};
+struct nw_read_section{
+    char *name;
+    struct nw_read_pair *pairs;
+    struct nw_read_section *next;
+};
+struct nw_read_pair
+{
+    char *key;
+    char *value;
+    struct nw_read_pair *next;
+};
+struct nw_read_conf_file
+#endif
