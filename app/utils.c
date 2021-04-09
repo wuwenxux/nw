@@ -91,8 +91,8 @@ static int __check_ifname(const char *name)
 }
 void invarg(const char *msg, const char *arg)
 {
-	fprintf(stderr, "Error: argument \"%s\" is wrong: %s\n", arg, msg);
-	exit(-1);
+	fprintf(stderr, "Error: argument \"%s\" is wrong,%s\n", arg, msg);
+	return;
 }
 
 int check_ifname(const char *name)
@@ -113,7 +113,7 @@ void duparg(const char *key, const char *arg)
 	fprintf(stderr,
 		"Error: duplicate \"%s\": \"%s\" is the second value.\n",
 		key, arg);
-	exit(-1);
+	return;
 }
 
 void duparg2(const char *key, const char *arg)
@@ -121,7 +121,7 @@ void duparg2(const char *key, const char *arg)
 	fprintf(stderr,
 		"Error: either \"%s\" is duplicate, or \"%s\" is a garbage.\n",
 		key, arg);
-	exit(-1);
+	return;
 }
 
 int get_unsigned32(unsigned int *val, const char *arg, int base)
@@ -225,7 +225,7 @@ int get_unsigned16(unsigned short *val, const char *arg, int base)
 	*val = res;
 	return 0;
 }
-
+/*convert from char * to int value */
 int get_integer(int *val, const char *arg, int base)
 {
 	long res;
@@ -258,8 +258,7 @@ int get_integer(int *val, const char *arg, int base)
 	*val = res;
 	return 0;
 }
-/* Returns false if 'prefix' is a not empty prefix of 'string'.
- */
+/* Returns false if 'prefix' is a not empty prefix of 'string'.*/
 bool matches(const char *prefix, const char *string)
 {
 	if (!*prefix)
@@ -280,6 +279,15 @@ void blank_del(char *buf)
 	memset(t_buf, 0, sizeof(t_buf));
 
 	for (b_flag = i = j = 0, len = strlen(buf); i < len; i++) {
+		/**
+		 * isspace handles below:
+		 * form-feed ('\f'),
+		 * newline ('\n'), 
+		 * carriage return ('\r'),
+		 * horizontal tab  ('\t'), 
+		 * and  vertical  tab
+         * ('\v').
+		 */
 		if (isspace(buf[i])) {
 			if (b_flag == 0) {
 				continue;

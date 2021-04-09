@@ -23,7 +23,7 @@
 #define NW_TYPE_SET            -18 
 #define IPV4ERR                -19 
 #define FILE_NOT_FOUND         -20
-#define PIPERR                -21
+#define PIPERR                 -21
 
 
 /*nw ioctl

@@ -218,7 +218,7 @@ int nw_search_if( char *dev)
 	}
 	pclose(fp);
 	
-	/* not exist net device */
+	/* net device is not exist  */
 	return -1;
 }
 void do_read(struct nw_oper_head *head)

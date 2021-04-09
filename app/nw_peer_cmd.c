@@ -34,7 +34,7 @@ int nw_peer_change(int argc, char **argv)
 	if(argc > 8 || argc < 7)
 	{
 		fprintf(stderr,"Num of argc is not valid.\n");
-		return -1;
+		goto FAILED;
 	}
 	while(argc > 0)
 	{
@@ -87,8 +87,7 @@ int nw_peer_change(int argc, char **argv)
 	if(!dev)
 	{
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
-		free(entry);
-		exit(-1);
+		goto FAILED;
 	}
 	if(strlen(peerid) >0)
 	{
@@ -97,15 +96,19 @@ int nw_peer_change(int argc, char **argv)
 		entry->port[0] = peerport;
 		if(nw_do_change(dev,entry) < 0)
 		{
-			free(entry);
-			return -1;	
+			goto FAILED;
 		}else
 		{
 			printf("Success!\n");
 		}
 	}
+	goto SUCCESS;
+SUCCESS:
 	free(entry);
 	return 0;
+FAILED:
+	free(entry);
+	return -1;
 }
 
 //dev nw1 peerid p1,p2,p3
@@ -166,23 +169,25 @@ int nw_peer_del(int argc, char ** argv)
 	if(!dev)
 	{
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
-		free(entry);
-		exit(-1);
+		goto FAILED;
 	}
 	if(entry->count)
 	{
 
 		if(nw_do_del(dev,entry) < 0)
 		{
-			free(entry);
-			return PEERDELERR;
+			goto FAILED;
 		}
 		else 
 			printf("Success!\n");
 	}
-
+		goto SUCCESS;
+SUCCESS:
 	free(entry);
 	return 0;
+FAILED:
+	free(entry);
+	return -1;
 }
 
 //[dev] nw1 peerid PEERID peerip PEERIP  peerpot PORT
@@ -231,18 +236,18 @@ int nw_peer_add(int argc, char ** argv)
 			}
 			if(dev)
 			{
-				free(entry);
 				duparg2("dev",*argv);
+				goto FAILED;
 			}
 			if(check_ifname(*argv) )
 			{
-				free(entry);
 				invarg("\"dev\" not a valid ifname", *argv);
+				goto FAILED;
 			}
 			if(check_nw_if(*argv))
 			{
-				free(entry);
 				invarg("not a running nw dev.",*argv);
+				goto FAILED;
 			}
 			dev = *argv;
 		}

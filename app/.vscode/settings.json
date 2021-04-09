@@ -3,6 +3,7 @@
     "C_Cpp.errorSquiggles": "Disabled",
     "files.associations": {
         "typeinfo": "cpp",
-        "cstdlib": "c"
+        "cstdlib": "c",
+        "nw_conf.h": "c"
     }
 }

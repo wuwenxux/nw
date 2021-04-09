@@ -11,14 +11,7 @@ static struct nw_option* add_option(struct nw_config *,const char *,const char *
 struct nw_config* find_config(struct nw_file *,const char *);
 char* find_value(struct nw_config *,const char *);
 struct nw_option* find_option(struct nw_config *,const char *);
-/*Open a config file
-* Parameters : a valid path to a file to read.
-*
-* Return Values:
-*			struct nw_file.
-* Description:
-*			Parse the given file and load it to the structures to process it.
-*/
+
 struct nw_file *file_open(char *path)
 {
 	char *word;
@@ -29,6 +22,7 @@ struct nw_file *file_open(char *path)
 	FILE *confFile;
 	struct nw_file *file = NULL;
 	struct nw_config *thisConfig = NULL;
+
 	if((confFile = fopen(path,"r"))== NULL)
 	{
 		return NULL;
@@ -47,11 +41,10 @@ struct nw_file *file_open(char *path)
 	{
 		blank_del(line);
 		word = strtok(line," ");
-		if(word == NULL)
+		if(word == NULL || *word == '#')
 		{
 			continue;
-		}
-		else if(strcmp(word,"config")== 0)
+		}else if(strcmp(word,"config")== 0)
 		{
 		   inface = strtok(NULL," ");
 		   if(inface == NULL)
@@ -65,6 +58,11 @@ struct nw_file *file_open(char *path)
 			//	printf("conf name :%s",conf_name);
 			 	trim(conf_name,trim_str);
 				thisConfig = add_config(file,conf_name);
+		   }else
+
+		   {
+			   fprintf(stderr,"interface is expected.\n");
+		   		goto EXIT;
 		   }
 		}else if(strcmp(word,"option")== 0)
 		{
@@ -76,6 +74,8 @@ struct nw_file *file_open(char *path)
 		 	add_option(thisConfig,key,val);
 		}
 	}
+		goto EXIT;
+EXIT:
     fclose(confFile);
 	return file;
 }
@@ -88,7 +88,7 @@ int nw_load_conf(char *path)
 	if((file = file_open(path))== NULL)
 	{
 		fprintf(stderr,"Can't open path %s",path);
-		return -1;
+		return FILE_NOT_FOUND;
 	}
 	thisConf = file->configs;
 	while(thisConf)
@@ -97,7 +97,7 @@ int nw_load_conf(char *path)
 		thisOpt = thisConf->options;
 		while(thisOpt)
 		{
-			printf("%s,%s \n",thisOpt->key,thisOpt->value);
+			printf("%s :%s \n",thisOpt->key,thisOpt->value);
 			thisOpt = thisOpt->next;
 		}
 		printf("\n");
@@ -118,10 +118,18 @@ static struct nw_config* add_config(struct nw_file *file,const char *name)
 {
 	struct nw_config *prevConfig = NULL;
 	struct nw_config *thisConfig = NULL;
+	
+	assert(file != NULL);
+	assert(name != NULL);
+	if(file == NULL || name == NULL)
+	{
+		return NULL;
+	}
 	if((thisConfig = find_config(file,name)) != NULL)
 	{
 		return thisConfig;
 	}
+	
 	thisConfig = malloc(sizeof(struct nw_config));
 	thisConfig->name = malloc(strlen(name)+1);
 	memcpy(thisConfig->name,name,strlen(name)+1);
@@ -131,6 +139,7 @@ static struct nw_config* add_config(struct nw_file *file,const char *name)
 
 	prevConfig = file->configs;
 	//config list is empty 
+	
 	if(prevConfig == NULL)
 	{
 		file->configs = thisConfig;

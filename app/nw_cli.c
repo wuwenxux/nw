@@ -7,6 +7,10 @@
 //#include "nw_conf.h"
 #define K  1024
 #define M 1024*1024
+#define none_of_other !is_other(r_other,sizeof(r_other)/sizeof(r_other[0])) 
+#define neither_of_ping !r_ping[0] && !r_ping[1] 
+#define show_all none_of_other && neither_of_ping && !r_bind && !r_type && !peerid && !peer_list  && !peer_id && !r_self &&!mptcp
+#define dev_found   !check_nw_if(dev)
 
 static bool is_other(bool other[],size_t);
 static void other_print(struct nw_other *,bool [],size_t);
@@ -190,11 +194,11 @@ int main(int argc,char *argv[])
 				if(check_filepath(*argv))
 				{
 					invarg("invalid file path.",*argv);
+					return -1;
 				}
 				path = *argv;
 			}
-			return nw_load_conf(path);
-			
+			return nw_load_conf(path);	
 		}
 		else if (matches(*argv,"save") == 0)
 		{
@@ -376,11 +380,20 @@ int nw_dev_show(int argc, char **argv)
 			if(strcmp(*argv,"dev") == 0)
 				NEXT_ARG();
 			if(dev)
+			{
 				duparg2("dev",*argv);
+				goto FAILED;
+			}
 			if(check_ifname(*argv))
+			{
 				invarg(" not a valid dev name.",*argv);
+				goto FAILED;
+			}
 			if(check_nw_if(*argv))
+			{
 				invarg(" not a ngmwan interface.",*argv);	
+				goto FAILED;
+			}
 			dev = *argv;
 		}
 		argc--;
@@ -389,13 +402,10 @@ int nw_dev_show(int argc, char **argv)
 	if(!dev)
 	{
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
-		free(entry);
-		exit(-1);
+		goto FAILED;
 	}
 	PUT_BAR_T(dev);
-	if(!is_other(r_other,sizeof(r_other)/sizeof(r_other[0])) 
-		&& !r_bind && !r_type && !r_ping[0] && !r_ping[1] 
-		&& !peerid && !peer_list  && !peer_id && !r_self &&!mptcp )
+	if(show_all&& dev_found)
 	{
 		ret = nw_other_read(dev,&other);
 		do_read(&other.head);
@@ -455,8 +465,13 @@ int nw_dev_show(int argc, char **argv)
 		ret = nw_mptcp(dev);
 		fprintf(stdout,"multipath  \t%-10s    \n",ret== true?"yes":"no");
 	}
+	goto RESULT;
+RESULT:
 	free(entry);
 	return ret;
+FAILED:
+	free(entry);
+	return -1;
 }
 
 int nw_dev_set(int argc, char **argv)
@@ -483,19 +498,31 @@ int nw_dev_set(int argc, char **argv)
 		{
 			NEXT_ARG();
 			if( other.bufflen != 0)
+			{
 				duparg("bufflen",*argv);
+				return -1;
+			}
 			if(get_unsigned32(&other.bufflen,*argv,0) || other.bufflen > 1024*4 || other.bufflen < 64)
+			{
 				invarg("invalid \"bufflen\" value between [64,1024*4] expected.\n",*argv);
+				return -1;
+			}	
 		}else if(matches(*argv,"budget") == 0 || matches(*argv,"maxblen") == 0)//other.budget
 		{
 			NEXT_ARG();
 			if(get_unsigned32(&other.budget,*argv,0) )
+			{
 				invarg("invalid \"budget\" value\n",*argv);
+				return -1;
+			}
 		}else if(matches(*argv,"queuelen") == 0|| matches(*argv,"qlen") == 0)//other.queuelen
 		{
 			NEXT_ARG();
 			if(get_unsigned32(&other.queuelen,*argv,0) || other.queuelen > 1000000 || other.queuelen < 1000)
+			{
 				invarg("invalid \"budget\" value\n",*argv);
+				return -1;		
+			}	
 		}else if(matches(*argv,"oneclient") == 0|| matches(*argv,"onecli") == 0)//other.oneclient
 		{
 			NEXT_ARG();
@@ -526,12 +553,18 @@ int nw_dev_set(int argc, char **argv)
 		{
 			NEXT_ARG();
 			if(get_unsigned32(&other.batch,*argv,0) || other.batch >200 ||other.batch < 10)
+			{
 				invarg("invalid \"batch\" value\n",*argv);
+				return -1;
+			}
 		}else if (matches(*argv,"idletimeout") == 0 || matches(*argv,"idle") == 0) //nw_ping
 		{
 			NEXT_ARG();
 			if(get_unsigned32(&other.idletimeout,*argv,0) || other.idletimeout < 30 )
+			{
 				invarg("invalid \"idletimeout\" value\n",*argv);
+				return -1;
+			}
 		}else if( matches(*argv,"mode") == 0) //nw_type
 		{
 			NEXT_ARG();
@@ -551,6 +584,7 @@ int nw_dev_set(int argc, char **argv)
 			if(get_unsigned16(&bind.port,*argv,0))
 			{
 				invarg("invalid \"bindport \" value\n",*argv);
+				return -1;
 			}
 		}else if (matches(*argv,"interval") == 0) //ping.interval
 		{
@@ -558,23 +592,33 @@ int nw_dev_set(int argc, char **argv)
 			if(get_unsigned32(&ping.interval,*argv,0))
 			{
 				invarg("invalid \"interval \" value\n",*argv);
+				return -1;
 			}
 		}else if(matches(*argv,"timeout") == 0)//ping.timeout
 		{
 			NEXT_ARG();
 			if(get_unsigned32(&ping.timeout,*argv,0))
+			{
 				invarg("invalid \"timeout \" value\n",*argv);
+				return -1;
+			}
 		}else if(matches(*argv,"ownid") == 0)//nw_self
 		{
 			NEXT_ARG();
 			if(check_self(*argv))
+			{
 				invarg("invalid \"ownid \" value\n",*argv);
+				return -1;
+			}
 			strcpy(self.peerid,*argv);
 		}else if(matches(*argv,"switchtime") == 0)
 		{
 			NEXT_ARG();
 			if(get_unsigned32(&other.switchtime,*argv,0))
+			{
 				invarg("invalid \"switchtime \" value",*argv);
+				return -1;
+			}	
 		}else if (matches(*argv,"multipath") == 0)
 		{
 			if( NEXT_ARG_OK())
@@ -598,11 +642,19 @@ int nw_dev_set(int argc, char **argv)
 			else if (strcmp(*argv,"help") == 0)
 				nw_set_usage();
 			if(dev)
+			{
 			 	duparg2("dev",*argv);
+				return -1;
+			}
 			if(check_ifname(*argv))
+			{
 				invarg("not a valid interface name",*argv);
-			if(check_nw_if(*argv))
+				return -1;
+			}if(check_nw_if(*argv))
+			{
 				invarg("not a ngmwan interface",*argv);
+				return -1;
+			}	
 			dev = *argv;
 		}
 		argc--;
@@ -679,9 +731,15 @@ int nw_dev_connect(int argc, char **argv)
 			if(dev)
 				duparg2("dev",*argv);
 			if(check_ifname(*argv) )
+			{
 				invarg("Invalid dev.\n",*argv);
+				goto FAILED;
+			}
 			if(check_nw_if(*argv))
+			{
 				invarg("not a ngmwan dev.\n",*argv);
+				goto FAILED;
+			}
 			dev = *argv;
 		} 		
 		argc--;argv++;
@@ -689,17 +747,20 @@ int nw_dev_connect(int argc, char **argv)
 	if(!dev)
 	{
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
-		free(entry);
-		exit(-1);
+		goto FAILED;
 	}
 	strcpy(entry->head.devname,dev);
 	if(nw_ioctl((struct nw_oper_head *)entry) < 0)
 	{
-		free(entry);
-		return -1;
+		goto FAILED;
 	}
+	goto SUCCESS;
+SUCCESS:
 	free(entry);
 	return 0;
+FAILED:
+	free(entry);
+	return -1;
 }
 const char* mode_str( u32 mode)
 {
@@ -710,7 +771,6 @@ const char* mode_str( u32 mode)
 	else
 		return "client";
 }
-
 static int on_off(const char *msg,const char *realval)
 {
 	fprintf(stderr,
