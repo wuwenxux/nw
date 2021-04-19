@@ -153,7 +153,6 @@ const char *dev_stat_str[]=
 	"SendBytes",
 	"SendSpeed",
 	"RecvPackets",
-
 	"RecvDrops",
 	"RecvErrors",
 	"RecvBytes",
@@ -202,7 +201,7 @@ int main(int argc,char *argv[])
 		}
 		else if (matches(*argv,"save") == 0)
 		{
-			return nw_save_conf(argc-1,argv+1);
+			return nw_save_conf(*argv);
 		}
 		else if(matches (*argv,"add") == 0)
 		{
@@ -441,7 +440,7 @@ int nw_dev_show(int argc, char **argv)
 		ret = nw_bind_read(dev,&bind);
 		do_read(&bind.head);
 	}
-	if(peer_list )
+	if(peer_list)
 	{
 		ret = nw_do_peer_list(dev,entry);
 		do_read(&entry->head);
@@ -586,6 +585,7 @@ int nw_dev_set(int argc, char **argv)
 				invarg("invalid \"bindport \" value\n",*argv);
 				return -1;
 			}
+		//tongshi shuru
 		}else if (matches(*argv,"interval") == 0) //ping.interval
 		{
 			NEXT_ARG();
@@ -817,11 +817,11 @@ static bool is_other(bool other[],size_t size)
 static void other_print(struct nw_other *other,bool is_other[],size_t size)
 {
 	if(is_other[0])
-		fprintf(stdout,"bufflen    \t%-10d    \n",other->bufflen);
+		fprintf(stdout,"bufflen    \t%-10dK    \n",other->bufflen);
 	if(is_other[1])
 		fprintf(stdout,"budget \t%-10d    \n",other->budget);
 	if(is_other[2])
-		fprintf(stdout,"queuelen   \t%-10d    \n",other->queuelen);
+		fprintf(stdout,"queuelen   \t%-10dK   \n",other->queuelen);
 	if(is_other[3])
 		fprintf(stdout,"oneclient  \t%-10s    \n",strcmp(other->oneclient,"yes")==0?"yes":"no");
 	if(is_other[4])
@@ -829,22 +829,22 @@ static void other_print(struct nw_other *other,bool is_other[],size_t size)
 	if(is_other[5])
 		fprintf(stdout,"batch      \t%-10d    \n",other->batch?other->batch:0);
 	if(is_other[6])
-		fprintf(stdout,"idletimeout\t%-10d    \n",other->idletimeout);
+		fprintf(stdout,"idletimeout\t%-10ds    \n",other->idletimeout);
 	if(is_other[7])
-		fprintf(stdout,"switchtime \t%-10d     \n",other->switchtime);
+		fprintf(stdout,"switchtime \t%-10ds     \n",other->switchtime);
 }
 static void ping_print(struct nw_ping *ping,bool is_ping[])
 {
 	if(is_ping[0])
-		fprintf(stdout,"interval   \t%-10d   \n",ping->interval);
+		fprintf(stdout,"interval   \t%-10dms   \n",ping->interval);
 	if(is_ping[1])
-		fprintf(stdout,"timeout    \t%-10d   \n",ping->timeout);
+		fprintf(stdout,"timeout    \t%-10dms   \n",ping->timeout);
 }
 static void peer_print(struct nw_peer_entry *entry,char *id)
 {
 	if(entry->head.type == NW_OPER_PEER )
 	{
-		char ipv4[20];
+		char ipv4[16];
 		int i;
 		for(i = 0 ; i < entry->count ; i++)
 		{

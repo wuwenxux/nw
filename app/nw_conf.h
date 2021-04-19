@@ -23,7 +23,7 @@ struct nw_file
  **/
 struct nw_config
 {
-    char *name;
+    char* name;
     struct nw_option *options;
     struct nw_config *next;
 };
@@ -60,14 +60,41 @@ struct nw_config *find_config(struct nw_file *file,const char *name);
  **/
 struct nw_option *find_option(struct nw_config *name,const char *key);
 /**
+ * Load config to set up a dev 
+ * if config is NULL ,or the ifname of this config is not valid return -1.
+ * Return:0 Success , DEV_NOT_FOUND,DEV_IS_RUNNING,IOCTLERR,INVALID_ARG Failed.
+ * @config: a ptr of listhead which points to nw_config.
+ **/
+int nw_setup_dev(struct nw_config *config);
+/**
+ * Load config and configure nw_other info.
+ * Return:0 Success ,DEV_NOT_FOUND,IOCTLERR,CHECKERR Failed.
+ * @config: a ptr of listhead which points to nw_config.
+ **/
+int nw_setup_other(struct nw_config *config);
+/**
+ * Load config and configure nw_peer_entry info.
+ * Return: 0 Success , CMDERR,DEV_NOT_FOUND ,MEMERR Failed.
+ * @config:a ptr of listhead which points to nw_config.
+ **/
+int nw_setup_peer(struct nw_config *config);
+/*util*/
+/**
+ * Convert  from a u32 value to a client/server str.
+ * Return: client/server  if not exist NULL.
+ * @mode:1 client 2 server 
+ **/
+
+/**
  * Find the value of a option with key
  * Return : value of this option
  * @name:name of the conf
  * @key:key of the option
- **/ 
+ **/
 char* find_value(struct nw_config *name,const char *key);
 /**
  * Close a file
+ * file supposed to be valid ,if not return.
  * @file:the nw_file object to close
  **/
 void file_close(struct nw_file **file);

@@ -4,6 +4,10 @@
     "files.associations": {
         "typeinfo": "cpp",
         "cstdlib": "c",
-        "nw_conf.h": "c"
+        "nw_conf.h": "c",
+        "if.h": "c",
+        "ioctl.h": "c",
+        "ioctls.h": "c",
+        "random": "c"
     }
 }

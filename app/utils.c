@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include "nw_err.h"
 #include <err.h>
+#include <arpa/inet.h>
 int check_nw_if(char *str)
 {
 	FILE	*fp;
@@ -15,7 +16,7 @@ int check_nw_if(char *str)
 
 
 	if (strlen(str) >= IFNAMSIZ) {
-		return DEVERR;
+		return INVALID_ARG;
 	}
 
 	if ((fp=popen(cmdline,"r")) == NULL) {
@@ -56,7 +57,7 @@ int nw_mptcp(char *str)
 	char cmd[100];
 	
 	if (strlen(str) >= IFNAMSIZ || check_ifname(str)) {
-		return DEVERR;
+		return INVALID_ARG;
 	}
 	sprintf(cmd,"ip link show dev %s |grep -o NOMULTIPATH",str);
 	if ((fp=popen(cmd,"r")) == NULL) {
@@ -92,7 +93,7 @@ static int __check_ifname(const char *name)
 void invarg(const char *msg, const char *arg)
 {
 	fprintf(stderr, "Error: argument \"%s\" is wrong,%s\n", arg, msg);
-	return;
+	exit(EXIT_FAILURE);
 }
 
 int check_ifname(const char *name)
@@ -113,7 +114,7 @@ void duparg(const char *key, const char *arg)
 	fprintf(stderr,
 		"Error: duplicate \"%s\": \"%s\" is the second value.\n",
 		key, arg);
-	return;
+	exit(EXIT_FAILURE);
 }
 
 void duparg2(const char *key, const char *arg)
@@ -121,7 +122,7 @@ void duparg2(const char *key, const char *arg)
 	fprintf(stderr,
 		"Error: either \"%s\" is duplicate, or \"%s\" is a garbage.\n",
 		key, arg);
-	return;
+	exit(EXIT_FAILURE);
 }
 
 int get_unsigned32(unsigned int *val, const char *arg, int base)
@@ -152,7 +153,7 @@ int get_unsigned32(unsigned int *val, const char *arg, int base)
 int check_filepath(char *path)
 {
 	FILE *fp;
-
+	assert(path != NULL);
 	if ((fp = fopen(path, "r")) == NULL) {
 		return FILE_NOT_FOUND;
 	}
@@ -199,6 +200,19 @@ int check_ipv4(const char *str)
 	}
 
 	return 0;
+}
+int check_netmask(const char *mask)
+{
+	unsigned int n_mask;
+	unsigned int h_mask;
+	inet_pton(AF_INET,mask,&n_mask);
+	h_mask = ntohl(n_mask);
+	if(h_mask == UINT32_MAX || h_mask == 0)
+		return 0;
+	else if(h_mask & (~h_mask >> 1))
+		return -1;
+	else 
+		return 0;
 }
 int get_unsigned16(unsigned short *val, const char *arg, int base)
 {

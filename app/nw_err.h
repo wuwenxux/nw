@@ -2,7 +2,11 @@
 #define NW_ERR_H_
 /*errno */
 #include <errno.h>
-
+/**
+ * Error handle
+ * Different kinds of errors to return.
+ * 
+ **/
 #define CMDERR                 -1
 #define SOCKERR                -2
 #define MEMERR                 -3
@@ -11,7 +15,7 @@
 #define PEERIDERR              -6
 #define PEERDELERR             -7
 #define ARGUERR                -8
-#define DEVERR                 -9
+#define DEV_IS_RUNNING         -9
 #define NW_IOCTL_ERR           -10        
 #define NW_OTHER_READ          -11
 #define NW_BIND_READ           -12
@@ -24,6 +28,8 @@
 #define IPV4ERR                -19 
 #define FILE_NOT_FOUND         -20
 #define PIPERR                 -21
+#define CHECKERR               -22
+#define INVALID_ARG            -23
 
 
 /*nw ioctl

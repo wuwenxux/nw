@@ -33,7 +33,7 @@ int nw_peer_change(int argc, char **argv)
 	}
 	if(argc > 8 || argc < 7)
 	{
-		fprintf(stderr,"Num of argc is not valid.\n");
+		fprintf(stderr,"Num of argc is not right.\n");
 		goto FAILED;
 	}
 	while(argc > 0)
@@ -89,7 +89,7 @@ int nw_peer_change(int argc, char **argv)
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
 		goto FAILED;
 	}
-	if(strlen(peerid) >0)
+	if(strlen(peerid) >0 && is_exist(dev,peerid))
 	{
 		strcpy(entry->peerid[0],peerid);
 		inet_pton(AF_INET,peerip,&entry->ip[0]);
@@ -97,10 +97,11 @@ int nw_peer_change(int argc, char **argv)
 		if(nw_do_change(dev,entry) < 0)
 		{
 			goto FAILED;
-		}else
-		{
-			printf("Success!\n");
 		}
+		printf("Success!\n");
+	}else
+	{
+		fprintf(stderr,"Error: Peerid is not exist.\n");
 	}
 	goto SUCCESS;
 SUCCESS:
@@ -193,14 +194,14 @@ FAILED:
 //[dev] nw1 peerid PEERID peerip PEERIP  peerpot PORT
 int nw_peer_add(int argc, char ** argv)
 {	
-
 	struct nw_peer_entry *entry = calloc(1,sizeof(struct nw_peer_entry));
 	if(entry == NULL)
 		return MEMERR;
 	char *dev =NULL;
 	char *id = NULL;
-	char *ip = NULL;
+	char ip[16];
 	u16 port;
+
 	if (argc < 7  || argc > 8)
 	{
 		fprintf(stderr,"argus are not enough.\n");
@@ -220,7 +221,7 @@ int nw_peer_add(int argc, char ** argv)
 				free(entry);
 				invarg("invalid ip addr: ",*argv);
 			}
-			ip = *argv;
+			strcpy(ip,*argv);
 		}else if(strcmp(*argv,"peerport") == 0 ||strcmp(*argv,"port") == 0)
 		{	
 			NEXT_ARG();
@@ -229,7 +230,8 @@ int nw_peer_add(int argc, char ** argv)
 				free(entry);
 				invarg("Invalid \"port\" .",*argv);
 			}
-		}else{
+		}else
+		{
 			if(strcmp(*argv,"dev") == 0)
 			{
 				NEXT_ARG();
@@ -257,11 +259,12 @@ int nw_peer_add(int argc, char ** argv)
 	{
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
 		goto FAILED;
-	}else if(strlen(id))
+	}else if(!is_exist(dev,id)&& strlen(id))
 	{
 		strcpy(entry->peerid[0],id);
-		inet_pton(AF_INET,ip,&entry->ip[0]);		
+		inet_pton(AF_INET,ip,&entry->ip[0]);	
 		entry->port[0] = port;
+		entry->count = 1;
 		if(nw_do_add(dev,entry) < 0)
 		{
 			goto FAILED;
@@ -272,7 +275,7 @@ int nw_peer_add(int argc, char ** argv)
 		}
 	}else
 	{
-		fprintf(stderr,"Argus like peerid ip  port are required.\n ");
+		fprintf(stderr,"Peer id is dulplicate.\n ");
 		goto FAILED;
 	}
 FAILED:
@@ -281,4 +284,34 @@ FAILED:
 SUCCESS:
 	free(entry);
 	return 0;
+}
+bool is_exist(const char *dev,char *id)
+{
+	int ret;
+	assert(dev != NULL);
+	assert(id != NULL);
+	int i;
+	struct nw_peer_entry *entry = calloc(1,sizeof(struct nw_peer_entry));
+	if((ret = nw_do_peer_list(dev,entry)) < 0)
+	{
+		goto failed;
+	}
+	if(entry->head.type == NW_OPER_PEER )
+	{
+
+		for(i = 0 ; i < entry->count ; i++)
+		{
+			if(strcmp(entry->peerid[i],id) == 0)
+			{
+				goto success;
+			}
+		}
+	}
+	goto failed;
+failed:
+	free(entry);
+	return false;
+success:
+	free(entry);
+	return true;
 }

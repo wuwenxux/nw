@@ -29,7 +29,6 @@ int nw_do_add(const char *dev,struct nw_peer_entry *npe)
 {
 	int ret;
 	strncpy(npe->head.devname,dev,IFNAMSIZ);
-	npe->count = 1;
 	npe->head.command =  NW_COMM_PEER_ADD;
 	npe->head.type = NW_OPER_PEER;
 	ret = nw_ioctl((struct nw_oper_head*)npe);
@@ -63,7 +62,7 @@ int nw_ping_read(const char *dev ,struct nw_ping *ping)
 	if(ping == NULL)
 		return -1;
 	if(dev == NULL)
-		return DEVERR;
+		return DEV_NOT_FOUND;
 	strcpy(ping->head.devname,dev);
 	ping->head.type = NW_OPER_PING;
 	ping->head.command = NW_COMM_READ;
@@ -237,16 +236,16 @@ void do_read(struct nw_oper_head *head)
 	}else if(head->type == NW_OPER_BIND)
 	{
 		struct nw_bind *bind = (struct nw_bind *) head;
-		fprintf(stdout,"bindport   \t%-10d   \n",bind->port);
+		fprintf(stdout,"bindport   \t%d   \n",bind->port);
 	}else if (head->type == NW_OPER_PING)
 	{
 		struct nw_ping *ping = (struct nw_ping *)head;
-		fprintf(stdout,"interval   \t%-10d   \n",ping->interval);
-		fprintf(stdout,"timeout    \t%-10d   \n",ping->timeout);
+		fprintf(stdout,"interval   \t%ds   \n",ping->interval);
+		fprintf(stdout,"timeout    \t%dms   \n",ping->timeout);
 	}else if(head->type == NW_OPER_TYPE)
 	{
 		struct nw_type *type = (struct nw_type *)head;
-		fprintf(stdout,"mode       \t%-10s   \n",mode_str(type->mode));
+		fprintf(stdout,"mode       \t%s   \n",mode_str(type->mode));
 	}else if(head->type == NW_OPER_DEVSTAT)
 	{
 		char *dev = NULL;
@@ -260,14 +259,14 @@ void do_read(struct nw_oper_head *head)
 	else if(head->type == NW_OPER_OTHER )
 	{
 		struct nw_other *other = (struct nw_other *)head;
-		fprintf(stdout,"bufflen    \t%-10d    \n",other->bufflen);
-		fprintf(stdout,"budget 	   \t%-10d    \n",other->budget);
-		fprintf(stdout,"oneclient  \t%-10s    \n",strcmp(other->oneclient,"yes")== 0?"yes":"no");
-		fprintf(stdout,"log   	   \t%-10s    \n",strcmp(other->showlog,"yes") ==0?"yes":"no");
-		fprintf(stdout,"queuelen   \t%-10d    \n",other->queuelen);
-		fprintf(stdout,"idletimeout\t%-10d    \n",other->idletimeout);
-		fprintf(stdout,"batch      \t%-10d    \n",other->batch?other->batch:0);
-		fprintf(stdout,"switchtime \t%-10d	  \n",other->switchtime);
+		fprintf(stdout,"bufflen    \t%dK    \n",other->bufflen);
+		fprintf(stdout,"budget 	   \t%d    \n",other->budget);
+		fprintf(stdout,"oneclient  \t%s    \n",strcmp(other->oneclient,"yes")== 0?"yes":"no");
+		fprintf(stdout,"log   	   \t%s    \n",strcmp(other->showlog,"yes") ==0?"yes":"no");
+		fprintf(stdout,"queuelen   \t%dK    \n",other->queuelen);
+		fprintf(stdout,"idletimeout\t%ds    \n",other->idletimeout);
+		fprintf(stdout,"batch      \t%d   \n",other->batch?other->batch:0);
+		fprintf(stdout,"switchtime \t%ds	  \n",other->switchtime);
 	}else if(head->type == NW_OPER_SELF)
 	{
 		struct nw_self *self = (struct nw_self *) head;
