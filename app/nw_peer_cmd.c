@@ -190,7 +190,51 @@ FAILED:
 	free(entry);
 	return -1;
 }
+//validate peer str: p1,ip,port
+int check_opt_peer(const char *dev, char *value,char *peerid,u32 *nl_ip, u16 *v_port)
+{
+	assert(dev != NULL);
+	assert(value != NULL);
+	char *ip = NULL;
+	char *id = NULL;
+	char *port = NULL;
 
+	id = strtok(value,",");
+	ip = strtok(NULL,",");
+	port = strtok(NULL,",");
+	assert(id != NULL);
+	assert(ip != NULL);
+	assert(port != NULL);
+	if(check_ifname(dev))
+	{
+		fprintf(stderr,"not a valid interface name.\n");
+		goto Failed;
+	}
+	if(check_ipv4(ip))
+	{
+		fprintf(stderr,"Not a valid ip address.\n");
+		goto Failed;
+	}
+	if(get_unsigned16(v_port,port,10))
+	{
+		fprintf(stderr,"Not a valid port.\n");
+		goto Failed;
+	}
+	if(!is_exist(dev,id))
+	{
+		assert(inet_pton(AF_INET,ip,nl_ip) > 0);
+		strcpy(peerid,id);
+		goto Success;
+	}else
+	{
+		fprintf(stderr,"Peer id is dulplicate.%s\n",id);
+		goto Failed;
+	}
+Failed:
+	return -1;
+Success:
+	return 0;
+}
 //[dev] nw1 peerid PEERID peerip PEERIP  peerpot PORT
 int nw_peer_add(int argc, char ** argv)
 {	
@@ -259,7 +303,7 @@ int nw_peer_add(int argc, char ** argv)
 	{
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
 		goto FAILED;
-	}else if(!is_exist(dev,id)&& strlen(id))
+	}else if(!is_exist(dev,id))
 	{
 		strcpy(entry->peerid[0],id);
 		inet_pton(AF_INET,ip,&entry->ip[0]);	

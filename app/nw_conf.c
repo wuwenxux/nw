@@ -11,9 +11,10 @@
  *Config a ip mask into a dev by .
  *Return : -1 Failed , 0 Success
  * @name : name of the dev.
+ * @cmd : SIOCSIFNETMASK or SIOCSIFADDR
  * @ip: netorder format of ip or mask.
  **/
-static int set_ip_using(const char *name, unsigned long ip);
+static int set_ip_using(const char *name, int cmd,unsigned int ip);
 /**
  * Add a configuration of ngmwan and return nw_config object,like:config interface 'nwconf1';
  * @path and @file are supposed to be valid ,return NULL,if either of them is NULL.
@@ -101,7 +102,7 @@ struct nw_file *file_open(char *path)
 				thisConfig = add_config(file,conf_name);
 		   }else
 		   {
-			   fprintf(stderr,"interface is expected.\n");
+			   	fprintf(stderr,"interface is expected.\n");
 		   		goto EXIT;
 		   }
 		}else if(strcmp(word,"option")== 0)
@@ -124,6 +125,24 @@ int nw_load_conf(char *path)
 	struct nw_file *file  = NULL;
 	struct nw_config *thisConf = NULL;
 	struct nw_option *thisOpt = NULL;
+	struct nw_peer_entry *entry = NULL;
+	struct nw_bind b;
+	struct nw_type t;
+	struct nw_other o;
+	char peerStr[MAX_PEER_NUMBER];
+	size_t peerIndex;
+	int ret;
+	char *dev = NULL;
+	char ipaddr[16];
+	char netmask[16];
+	u32 mode;
+	u16 bindport;
+	char log[4];
+	char *peer = NULL;
+	bool is_static = false;
+	char peer_id[MAX_PEERNAME_LENGTH];
+	u32 peer_ip;
+	u16 peer_port;
 
 	if((file = file_open(path))== NULL)
 	{
@@ -133,111 +152,181 @@ int nw_load_conf(char *path)
 	thisConf = file->configs;
 	while(thisConf)
 	{
-		printf("%s\n",thisConf->name);
+		printf("set up %s\n",thisConf->name);
+		peerIndex = 0;
+		entry = calloc(1,sizeof(struct nw_peer_entry));	
 		thisOpt = thisConf->options;
 		while(thisOpt)
-		{
-			printf("%s :%s \n",thisOpt->key,thisOpt->value);
+		{	
+			if(strcmp(thisOpt->key,"ifname")==0)
+			{
+				dev = thisOpt->value;
+			}else if(strcmp(thisOpt->key,"proto") == 0)
+			{
+				is_static = (strcmp(thisOpt->value,"dchp") == 0) ? false : true;   
+			}
+			else if(strcmp(thisOpt->key,"ipaddr") == 0 && is_static)
+			{
+				strcpy(ipaddr,thisOpt->value);
+			}else if(strcmp(thisOpt->key,"netmask") == 0)
+			{
+				if(check_netmask(thisOpt->value))
+				{
+					fprintf(stderr,"Invalid netmask.\n");
+					goto Failed;
+				}
+				strcpy(netmask,thisOpt->value);
+			}else if(strcmp(thisOpt->key,"mode") == 0)
+			{
+				if(strcmp(thisOpt->value,"client") == 0)
+					mode = NW_MODE_CLIENT;
+				else if(strcmp(thisOpt->value,"server") == 0)
+					mode = NW_MODE_SERVER;
+			}else if(strcmp(thisOpt->key,"bindport")== 0)
+			{
+				if(get_unsigned16(&bindport,thisOpt->value,10))
+				{	
+					fprintf(stderr,"Not a valid unsigned short value\n");
+				}
+			}else if(strcmp(thisOpt->key,"log") == 0)
+			{
+				if(strcmp(thisOpt->value,"yes") == 0|| strcmp(thisOpt->value,"no") == 0)
+					strcpy(log,thisOpt->value);
+			}else if(strncmp(thisOpt->key,"peer",4) == 0)
+			{
+				assert(check_ifname(dev) == 0);
+				assert(check_opt_peer(dev,thisOpt->value,peer_id,&peer_ip,&peer_port)==0);
+				strcpy(entry->peerid[peerIndex],peer_id);
+				entry->ip[peerIndex] = peer_ip;
+				entry->port[peerIndex] = peer_port;
+				peerIndex++;
+			}else//default 
+			{
+				printf("%s :%s\n",thisOpt->key,thisOpt->value);
+			}
 			thisOpt = thisOpt->next;
 		}
+		if(!check_ifname(dev) && !check_ipv4(ipaddr) && !check_netmask(netmask))
+	   	{
+			ret = nw_setup_dev(dev,ipaddr,netmask);
+			if(ret)
+			{
+				fprintf(stderr,"Setup %s failed\n",dev);
+				goto Failed;
+			}
+			fprintf(stdout,"Device %s setup success\n",dev);
+		}
+		if(bindport)
+		{
+			b.port = bindport;
+			if(nw_bind_set(dev,&b))
+				goto Failed;
+		}
+		if(mode)
+		{
+			t.mode  = mode;
+			if(nw_type_set(dev,&t))
+				goto Failed;
+		}
+		if(strlen(log)>0)
+		{
+			strcpy(o.showlog,log);
+			if(nw_other_set(dev,&o))
+				goto Failed;
+		}
+		if(peerIndex)
+		{
+			entry->count = peerIndex;
+			printf("entry->count:%u\n",entry->count);
+			if(nw_do_add(dev,entry))
+				goto Failed;
+		}
+		free(entry);
 		printf("\n");
 		thisConf = thisConf->next;
 	}
+	goto Success;
+Success:
 	file_close(&file);
 	return 0;
+Failed:
+	if(peerIndex)
+		free(entry);
+	file_close(&file);
+	return -1;
 }
+
 int nw_save_conf(const char *dev)
 {
+	struct nw_other other;
+	struct nw_other *o_ptr =NULL;
+	struct nw_peer_entry entry;
+	struct nw_peer_entry *ent_ptr=NULL;
+	struct nw_bind bind;
+	struct nw_bind *b_ptr = NULL;
+	struct nw_self self;
+	struct nw_self *s_ptr = NULL;
+	struct nw_type type;
+	struct nw_type *t_ptr = NULL;
+	
+//	nw_over();
+
+
+
+	//malloc 
+
+	//write
 	//struct nw_other *other;
 	//nw_other_save(other);
 	
 	return 0;
 }
-static int set_ip_using(const char *name, unsigned long ip)
+int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 {
-    struct ifreq ifr;
-    struct sockaddr_in sin;
-	int sock;
-	sock = socket(AF_INET,SOCK_DGRAM,0);
-	if(!sock)
-	{
-		fprintf(stderr,"set ip sock err.\n");
-		return -1;
-	}
-    strncpy(ifr.ifr_name, name, IFNAMSIZ);
-    memset(&sin, 0, sizeof(struct sockaddr));
-    sin.sin_family = AF_INET;
-    sin.sin_addr.s_addr = ip;
-	memcpy(&ifr.ifr_addr, &sin, sizeof(struct sockaddr));
-    
-	if (ioctl(sock, SIOCSIFADDR, &ifr) < 0)
-	{
-		fprintf(stderr,"set ip ioctl err.\n");
-		return -1;
-	}
-    return 0;
-}
-int nw_setup_dev(struct nw_config *conf)
-{
-	char *dev = NULL;
 	int ret;
 	char dev_cmd[50];
+	char ip_cmd[128];
 	char ip_v4[16];
-	unsigned long ip;
+	unsigned int ip;
 	char mask_str[16];
-	unsigned long nmask;
-	assert(conf != NULL);
+	unsigned int nmask;
 	
-	if((dev = find_value(conf,"ifname")) == NULL)
-	{
-		fprintf(stderr,"ifname is required.\n");
-		return DEV_NOT_FOUND;
-	}
-	if(check_nw_if(dev))
-	{
-		fprintf(stderr,"device %s is running,either change a new ifname or remove this config\n",dev);
-		return DEV_IS_RUNNING;
-	}
-	assert(dev!= NULL);
+	assert(dev != NULL);
+	assert(check_nw_if(dev)!= 0);
+	printf("ifname:%s\n",dev);
 	sprintf(dev_cmd,"sudo ip link add %s type ngmwan",dev);
-	assert(find_value(conf,"ipaddr") != NULL);
-	strcpy(ip_v4 ,find_value(conf,"ipaddr"));
-	if(check_ipv4(ip_v4))
-	{
-		fprintf(stderr,"Invalid ipv4 addr.\n");
-		return -1;
-	}
-	if(inet_pton(AF_INET,ip_v4,&ip) <= 0)
-	{
-		fprintf(stderr,"Invalid conversion from char * to netorder\n");
-		return -1;
-	}
-	assert(find_value(conf,"mask") != NULL);
-	strcpy(mask_str,find_value(conf,"mask"));
-	if(check_netmask(mask_str))
-	{
-		fprintf(stderr,"invalid net mask.\n");
-		return -1;
-	}
-	if(inet_pton(AF_INET,mask_str,&nmask) <= 0)
-	{
-		fprintf(stderr,"Invalid conversion from char * to netorder\n");
-		return -1;
-	}
+	strcpy(ip_v4,ip_str);
+	assert(check_ipv4(ip_v4)==0);
+	strcpy(mask_str,netmask);
+	assert(check_netmask(mask_str)==0);
+	sprintf(ip_cmd,"sudo ip addr add %s/%s dev %s ",ip_v4,mask_str,dev);
 	//sudo ip link add dev %s type ngmwan
-	system(dev_cmd);
-	ret = set_ip_using(dev,ip);
-	if(ret < 0)
+	ret = system(dev_cmd);
+	if(ret)
 	{
-		return -1;
-	} 
-	ret =set_ip_using(dev,nmask);
-	if(ret < 0)
+		fprintf(stderr,"dev setup failed.\n");
+	}
+	ret = system(ip_cmd);
+	if(ret)
 	{
-		return -1;
+		fprintf(stderr,"ip configuration failed.\n");
 	}
 	return 0;
 }
+int nw_setup_other(struct nw_other *o_ptr)
+{
+	struct nw_other *other = NULL;
+//	find_value()
+
+	return 0;
+}
+/*
+int nw_setup_peer(struct nw_peer_entry *e_ptr)
+{
+	int ret;
+	ret = opt_add_peer(dev,peer_str);
+	return ret;
+}*/
 static struct nw_config* add_config(struct nw_file *file,const char *name)
 {
 	struct nw_config *prevConfig = NULL;

@@ -92,6 +92,16 @@ int nw_peer_del(int argc, char ** argv);
  **/
 int nw_do_del(const char *, struct nw_peer_entry *);
 /**
+ * Add a peer from a nw conf opt
+ * Return :a ptr to struct nw_peer_entry *
+ * @dev:name of this dev
+ * @val:peer info: str id,ip,port
+ * @peerid:id of this peer to return
+ * @nl_ip:netorder ip addr  to return
+ * @v_port:port number of peer
+ **/
+int check_opt_peer(const char *dev, char *value,char *peerid,u32 *nl_ip, u16 *v_port);
+/**
  * Parse argv to a nw_peer_entry object
  * Return:0 Success -1 Failed
  * @argc:number of argus
@@ -160,11 +170,18 @@ int nw_save_conf(const char *dev );
  **/
 const char* mode_str(u32 mode);
 /**
+ * Convert a mode string to mode value
+ * Note: only
+ **/
+u32 str_mode(const char *mode);
+/**
  * Search a running ngmwan interface by ip link
  * Return : 0 Success -1 Failed
  * @dev:check whether dev is a running ngmwan interface.
  **/
 int nw_search_if(char *dev);
+
+
 
 /*read*/
 /**

@@ -168,10 +168,14 @@ int nw_ioctl(struct nw_oper_head *head)
     ret = ioctl(sock,NW_OPER,&req);
     if(ret) 
 	{
-		printf("ioctl err.not a valid input\n");
-		close(sock);
-		return -1;
+		fprintf(stderr,"dev:%s,result :%d \n",head->devname,head->result);
+		goto Failed;
 	}
+	goto Success;
+Failed:
+	close(sock);
+	return -1;
+Success:
 	close(sock);
 	return !head->result;
 }

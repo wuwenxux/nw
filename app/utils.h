@@ -85,8 +85,8 @@ int check_ipv4(const char *ipv4_str);
 int check_netmask(const char *ipmask_str);
 /**
  * Whether a dev is a valid nw interface.
- * Note:The name of dev is not valid or dev is not a running dev 
- * Return:if valid return true,else return fasle 
+ * Note:Dev is not a running dev 
+ * Return:if running return 0,else return -1 
  * @dev:a valid dev name
  * Note: name of dev must be valid.
  **/
