@@ -90,7 +90,7 @@ int check_netmask(const char *ipmask_str);
  * @dev:a valid dev name
  * Note: name of dev must be valid.
  **/
-int check_nw_if(char *dev);
+int check_nw_if(const char *dev);
 /**
  * To confirm whether multipath is supported by dev
  * Note: dev should be a effective name ,otherwise  DEVERR , CMDERR,-1 returned.

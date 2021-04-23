@@ -7,14 +7,7 @@
 #include <net/if.h>
 #include "nw_conf.h"
 #define trim_str "\'\""
-/**
- *Config a ip mask into a dev by .
- *Return : -1 Failed , 0 Success
- * @name : name of the dev.
- * @cmd : SIOCSIFNETMASK or SIOCSIFADDR
- * @ip: netorder format of ip or mask.
- **/
-static int set_ip_using(const char *name, int cmd,unsigned int ip);
+
 /**
  * Add a configuration of ngmwan and return nw_config object,like:config interface 'nwconf1';
  * @path and @file are supposed to be valid ,return NULL,if either of them is NULL.
@@ -55,6 +48,13 @@ char* find_value(struct nw_config *name,const char *key);
  * @key:key of the option name
  **/
 struct nw_option* find_option(struct nw_config *name,const char *key);
+static void nw_dev_conf_export(FILE *,
+                            const char *,
+                            struct nw_other *, 
+                            struct nw_bind *,
+                            struct nw_ping *,
+                            struct nw_type *,
+                            struct nw_self *);
 
 struct nw_file *file_open(char *path)
 {
@@ -126,10 +126,16 @@ int nw_load_conf(char *path)
 	struct nw_config *thisConf = NULL;
 	struct nw_option *thisOpt = NULL;
 	struct nw_peer_entry *entry = NULL;
+	struct nw_self s;
+	struct nw_ping p;
 	struct nw_bind b;
 	struct nw_type t;
 	struct nw_other o;
-	char peerStr[MAX_PEER_NUMBER];
+	memset(&o,0,sizeof(struct nw_other));
+	memset(&s,0,sizeof(struct nw_self));
+	memset(&b,0,sizeof(struct nw_bind));
+	memset(&t,0,sizeof(struct nw_type));
+	memset(&p,0,sizeof(struct nw_ping));
 	size_t peerIndex;
 	int ret;
 	char *dev = NULL;
@@ -138,7 +144,6 @@ int nw_load_conf(char *path)
 	u32 mode;
 	u16 bindport;
 	char log[4];
-	char *peer = NULL;
 	bool is_static = false;
 	char peer_id[MAX_PEERNAME_LENGTH];
 	u32 peer_ip;
@@ -200,9 +205,48 @@ int nw_load_conf(char *path)
 				entry->ip[peerIndex] = peer_ip;
 				entry->port[peerIndex] = peer_port;
 				peerIndex++;
-			}else//default 
+			}else if(strcmp(thisOpt->key,"bufflen") == 0)
 			{
-				printf("%s :%s\n",thisOpt->key,thisOpt->value);
+				assert(thisOpt->value != NULL);
+				assert(get_unsigned32(&o.bufflen,thisOpt->value,10) > 0);
+			}
+			else if(strcmp(thisOpt->key,"budget")==0)
+			{
+				assert(get_unsigned32(&o.bufflen,thisOpt->value,10)>0);
+			}
+			else if(strcmp(thisOpt->key,"oneclient")== 0)
+			{
+				assert(strcmp(thisOpt->value,"yes")==0 || strcmp(thisOpt->value,"no") == 0);
+				strcpy(o.oneclient,thisOpt->value);
+			}
+			else if(strcmp(thisOpt->key,"queuelen") == 0)
+			{
+				assert(get_unsigned32(&o.queuelen,thisOpt->value,10) > 0);
+			}
+			else if(strcmp(thisOpt->key,"idletimeout")==0)
+			{
+				assert(get_unsigned32(&o.idletimeout,thisOpt->value,10)>0);
+			}
+			else if(strcmp(thisOpt->key,"batch") == 0)
+			{
+				assert(get_unsigned32(&o.batch,thisOpt->value,10)>0);	
+			}
+			else if(strcmp(thisOpt->key,"swtichtimeout")==0)
+			{
+				assert(get_unsigned32(&o.idletimeout,thisOpt->value,10)>0);
+			}
+			else if(strcmp(thisOpt->key,"interval")==0)
+			{
+				assert(get_unsigned32(&p.interval,thisOpt->value,10) > 0);
+			}
+			else if(strcmp(thisOpt->key,"timeout")==0)
+			{
+				assert(get_unsigned32(&p.timeout,thisOpt->value,10) > 0);
+			}
+			else if(strcmp(thisOpt->key,"ownid")==0)
+			{
+				assert(thisOpt->value !=NULL);
+				strcpy(s.peerid,thisOpt->value);
 			}
 			thisOpt = thisOpt->next;
 		}
@@ -215,6 +259,25 @@ int nw_load_conf(char *path)
 				goto Failed;
 			}
 			fprintf(stdout,"Device %s setup success\n",dev);
+		}
+		if(o.batch||o.bufflen||o.idletimeout||o.switchtime||o.budget||o.queuelen||strlen(o.oneclient)||strlen(o.showlog))
+		{
+			if(nw_other_set(dev,&o))
+				goto Failed;
+		}
+		if(p.interval&&p.timeout)
+		{	
+			if(p.interval <p.timeout)
+			{	
+				if(nw_ping_set(dev,&p))
+					goto Failed;
+			}
+			else
+			{
+				fprintf(stderr,"interval comes earlier than timeout.\n");
+			}
+		}else{
+			fprintf(stderr,"these two values(interval,timeout) should be set or \n");
 		}
 		if(bindport)
 		{
@@ -256,30 +319,110 @@ Failed:
 	return -1;
 }
 
+static int nw_overwrite(char *argv)
+{
+	char buf[512], ch;
+
+	printf(" overwrite (yes/no)? ");
+
+	memset(buf, 0, sizeof(buf));
+
+	for(;;) {
+		ch = fgetc(stdin);
+		if (isprint(ch)) {
+			printf("%c", ch);
+			strncat(buf, &ch, 1);
+		} else if ((ch == '\n') || (ch == '\r')) {
+			printf("%c", ch);
+			break;
+		} else if (ch == '\b' || ch == 0x7f) {
+			/* BackSpace */
+			if (strlen(buf)) {
+				buf[strlen(buf)-1] = '\0';
+				printf("\b");
+				printf("\x1b[0J");
+			}
+		}
+	}
+
+	if (buf[0] == 'y') {
+		if ((strcmp(buf, "yes") == 0) || strlen(buf) == 1) {
+			return 0;
+		}
+	}
+	return -1;
+}
 int nw_save_conf(const char *dev)
 {
-	struct nw_other other;
-	struct nw_other *o_ptr =NULL;
-	struct nw_peer_entry entry;
-	struct nw_peer_entry *ent_ptr=NULL;
-	struct nw_bind bind;
-	struct nw_bind *b_ptr = NULL;
-	struct nw_self self;
-	struct nw_self *s_ptr = NULL;
-	struct nw_type type;
-	struct nw_type *t_ptr = NULL;
-	
-//	nw_over();
+	assert(dev != NULL);
+	FILE *fp = NULL;
+	struct nw_other o;
+	struct nw_bind b;
+	struct nw_self s;
+	struct nw_ping p;
+	struct nw_type t;
+	struct nw_peer_entry *npe = NULL;
+	int ret = 0;
+	if(check_nw_if(dev) != 0)
+	{
+		perror("Dev not found.\n");
+		ret = -1;
+		goto RETURN;
+	}
+	if((fp = fopen(DEFAULT_CONF_FILE,"r")) == NULL)
+	{
 
-
-
-	//malloc 
-
+	}else
+	{
+		if(nw_overwrite(DEFAULT_CONF_FILE) != 0)
+		{
+			//Not save
+			ret = 0;
+			goto RETURN;
+		}
+	}
+	if(nw_other_read(dev,&o))
+	{
+		ret =-1;
+		goto RETURN;
+	}
+	if(nw_ping_read(dev,&p))
+	{
+		ret = -1;
+		goto RETURN;
+	}
+	if(nw_type_read(dev,&t))
+	{
+		ret = -1;
+		goto RETURN;
+	}
+	//malloc
+	npe = calloc(1,sizeof(struct nw_peer_entry));
+	if(npe == NULL)
+	{
+		perror("Malloc error.\n");
+		ret = -1;
+		goto RETURN;
+	}
+	if(nw_do_peer_list(dev,npe))
+	{
+		ret = -1;
+		goto RETURN;
+	}
+	if((fp = fopen(DEFAULT_CONF_FILE,"w")) == NULL)
+	{
+		printf("Can not open file.\n");
+		ret = -1;
+		goto RETURN;
+	}
 	//write
+	nw_dev_conf_export(fp,dev,&o,&b,&p,&t,&s);
+	
+
 	//struct nw_other *other;
 	//nw_other_save(other);
-	
-	return 0;
+RETURN:
+	return ret;
 }
 int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 {
@@ -287,9 +430,8 @@ int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 	char dev_cmd[50];
 	char ip_cmd[128];
 	char ip_v4[16];
-	unsigned int ip;
 	char mask_str[16];
-	unsigned int nmask;
+
 	
 	assert(dev != NULL);
 	assert(check_nw_if(dev)!= 0);
@@ -313,13 +455,7 @@ int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 	}
 	return 0;
 }
-int nw_setup_other(struct nw_other *o_ptr)
-{
-	struct nw_other *other = NULL;
-//	find_value()
 
-	return 0;
-}
 /*
 int nw_setup_peer(struct nw_peer_entry *e_ptr)
 {
@@ -482,4 +618,17 @@ void file_close(struct nw_file **file)
 	free((*file)->name);
 	free(*file);
 	*file = NULL;
+}
+static void nw_dev_conf_export(FILE *fp,
+                            const char *dev,
+                            struct nw_other *o_ptr, 
+                            struct nw_bind *b_ptr,
+                            struct nw_ping *p_ptr,
+                            struct nw_type *t_ptr,
+                            struct nw_self *s_ptr)
+{
+	struct nw_conf *conf;
+	add_config()
+
+	return;
 }

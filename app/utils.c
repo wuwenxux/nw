@@ -7,7 +7,7 @@
 #include "nw_err.h"
 #include <err.h>
 #include <arpa/inet.h>
-int check_nw_if(char *str)
+int check_nw_if(const char *str)
 {
 	FILE	*fp;
 	char	buf[256];

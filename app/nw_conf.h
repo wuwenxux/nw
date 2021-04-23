@@ -102,4 +102,5 @@ char* find_value(struct nw_config *name,const char *key);
  * @file:the nw_file object to close
  **/
 void file_close(struct nw_file **file);
+
 #endif

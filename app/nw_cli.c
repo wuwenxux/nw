@@ -161,7 +161,7 @@ const char *dev_stat_str[]=
 };
 int main(int argc,char *argv[])
 {
-	char *path = DEF_CONF_FILE;
+	char *path = DEFAULT_CONF_FILE;
 	if(argc < 2 ) 
 	{
 		nw_usage();
