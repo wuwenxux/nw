@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <sys/queue.h>
+
 //structures
 /**
  * Struct of a conf file(name, configs) 
@@ -26,22 +28,29 @@ struct nw_config
     char* name;
     struct nw_option *options;
     struct nw_config *next;
-};
+}conf;
 /**
  * A option of a ngmwanconf file
  * option  key : value
  * @key:index to store the value
- * @value:value of the key to be stored
+ * @value:values of the key to be stored
  * @next:one link of a option list 
  **/
+
 struct nw_option
 {
     char *key;
-    char *value;
+    struct nw_value *values;
     struct nw_option *next;
 };
+struct nw_value{
+    char *string;
+    struct nw_value *next;
+}val;
+
+
 /**
- * Parse the given file and load it to the structures to process it
+ * Parse the given file and load it into the conf structures.
  *  Return: a struct nw_file object if success else return NULL.
  * @path:file path
  **/
@@ -59,6 +68,8 @@ struct nw_config *find_config(struct nw_file *file,const char *name);
  * @key:the key of the option to search
  **/
 struct nw_option *find_option(struct nw_config *name,const char *key);
+int find_value(struct nw_option *opt, const char *val);
+
 //struct nw_list *find_list(struct nw_config *name,const char *name);
 /**
  * Load config to set up a dev 
@@ -94,7 +105,7 @@ int nw_setup_peer(struct nw_peer_entry *e_ptr);
  * @name:name of the conf
  * @key:key of the option
  **/
-char* find_value(struct nw_config *name,const char *key);
+//char* find_value(struct nw_config *name,const char *key);
 /**
  * Close a file
  * Free all allocated structures : options,configs

@@ -819,7 +819,7 @@ static void other_print(struct nw_other *other,bool is_other[],size_t size)
 	if(is_other[0])
 		fprintf(stdout,"bufflen    \t%-10dK    \n",other->bufflen);
 	if(is_other[1])
-		fprintf(stdout,"budget \t%-10d    \n",other->budget);
+		fprintf(stdout,"budget 		\t%-10d    \n",other->budget);
 	if(is_other[2])
 		fprintf(stdout,"queuelen   \t%-10dK   \n",other->queuelen);
 	if(is_other[3])
@@ -831,7 +831,7 @@ static void other_print(struct nw_other *other,bool is_other[],size_t size)
 	if(is_other[6])
 		fprintf(stdout,"idletimeout\t%-10ds    \n",other->idletimeout);
 	if(is_other[7])
-		fprintf(stdout,"switchtime \t%-10ds     \n",other->switchtime);
+		fprintf(stdout,"switchtime \t%-10ds    \n",other->switchtime);
 }
 static void ping_print(struct nw_ping *ping,bool is_ping[])
 {

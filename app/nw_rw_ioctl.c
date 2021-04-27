@@ -244,7 +244,7 @@ void do_read(struct nw_oper_head *head)
 	}else if (head->type == NW_OPER_PING)
 	{
 		struct nw_ping *ping = (struct nw_ping *)head;
-		fprintf(stdout,"interval   \t%ds   \n",ping->interval);
+		fprintf(stdout,"interval   \t%dms   \n",ping->interval);
 		fprintf(stdout,"timeout    \t%dms   \n",ping->timeout);
 	}else if(head->type == NW_OPER_TYPE)
 	{

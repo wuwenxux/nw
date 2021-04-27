@@ -3,10 +3,48 @@
 #include <errno.h>
 #include <limits.h>
 #include <net/if.h>
+#include <sys/ioctl.h>
 #include <ctype.h>
 #include "nw_err.h"
 #include <err.h>
-#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <netdb.h>
+#include <arpa/inet.h>	
+int get_ip_mask(const char *dev,char *ip_str,char *mask)
+{
+	struct ifaddrs *ifaddr, *ifa;
+    int family, s;
+
+	assert(dev !=NULL);
+    if (getifaddrs(&ifaddr) == -1) 
+    {
+        perror("getifaddrs");
+        exit(EXIT_FAILURE);
+    }
+
+
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) 
+    {
+        if (ifa->ifa_addr == NULL)
+            continue;  
+
+		s=getnameinfo(ifa->ifa_addr,sizeof(struct sockaddr_in),&ip_str, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+        s=getnameinfo(ifa->ifa_netmask,sizeof(struct sockaddr_in),&mask, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+		if((strcmp(ifa->ifa_name,dev)==0)&&(ifa->ifa_addr->sa_family==AF_INET))
+        {
+			if(s != 0)
+			{
+				printf("getnameinfo() failed: %s\n", gai_strerror(s));
+				exit(EXIT_FAILURE);
+			}
+ 			strcpy(ip_str,ifa->ifa_addr); 
+			strcpy(mask,ifa->ifa_netmask);
+		}
+    }
+    freeifaddrs(ifaddr);
+    exit(EXIT_SUCCESS);
+
+}
 int check_nw_if(const char *str)
 {
 	FILE	*fp;

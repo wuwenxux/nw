@@ -83,6 +83,7 @@ int check_ipv4(const char *ipv4_str);
  * @ipmask_str:a str like 255.255.168.0
  **/
 int check_netmask(const char *ipmask_str);
+int get_ip_mask(const char *dev,char *ip_str,char *mask );
 /**
  * Whether a dev is a valid nw interface.
  * Note:Dev is not a running dev 
