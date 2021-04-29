@@ -4,7 +4,6 @@
 #include "nw_err.h"
 #include "manage.h"
 #include <ctype.h>
-//#include "nw_conf.h"
 #define K  1024
 #define M 1024*1024
 #define none_of_other !is_other(r_other,sizeof(r_other)/sizeof(r_other[0])) 
@@ -104,7 +103,7 @@ void  nw_usage(void)
 			"						[ switchtime SWITCHTIME]\n"
 			"						[ mode { client | server } ]\n"
 			"	nw load FILE\n"
-			"	nw save FILE\n"
+			"	nw save DEV\n"
 			"	nw show [ DEVICE | dev DEVICE ][status]{ PEERID | peer PEERID }\n"
 			"	nw ver\n"
 			"	nw stat 	[ DEVICE | dev DEVICE ]\n"
@@ -162,6 +161,7 @@ const char *dev_stat_str[]=
 int main(int argc,char *argv[])
 {
 	char *path = DEFAULT_CONF_FILE;
+	char *dev = NULL;
 	if(argc < 2 ) 
 	{
 		nw_usage();
@@ -193,7 +193,6 @@ int main(int argc,char *argv[])
 				if(check_filepath(*argv))
 				{
 					invarg("invalid file path.",*argv);
-					return -1;
 				}
 				path = *argv;
 			}
@@ -201,7 +200,17 @@ int main(int argc,char *argv[])
 		}
 		else if (matches(*argv,"save") == 0)
 		{
-			return nw_save_conf(*argv);
+			if(NEXT_ARG_OK())
+			{
+				NEXT_ARG();
+				if(check_nw_if(*argv))
+				{
+					invarg("dev is not existed.",*argv);
+				}
+				dev = *argv;
+			}
+			printf("%s dev",dev);
+			return nw_save_conf(dev);
 		}
 		else if(matches (*argv,"add") == 0)
 		{

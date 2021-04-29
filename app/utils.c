@@ -21,8 +21,6 @@ int get_ip_mask(const char *dev,char *ip_str,char *mask)
         perror("getifaddrs");
         exit(EXIT_FAILURE);
     }
-
-
     for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) 
     {
         if (ifa->ifa_addr == NULL)
@@ -42,7 +40,7 @@ int get_ip_mask(const char *dev,char *ip_str,char *mask)
 		}
     }
     freeifaddrs(ifaddr);
-    exit(EXIT_SUCCESS);
+	return 0;
 
 }
 int check_nw_if(const char *str)

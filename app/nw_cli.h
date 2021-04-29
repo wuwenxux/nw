@@ -8,7 +8,8 @@
 #define PUT_BAR_T(str)	printf("*****************************************\n"); \
 			            printf("*  ngmwan interface: %s                *\n", str);\
 			            printf("*****************************************\n");
-#define DEFAULT_CONF_FILE  "/etc/config/ngmwan"
+#define DEFAULT_CONF_FILE  "./ngmwan"
+#define DEFAULT_SAVE_FILE  "./save_ngmwan"
 #define CONF_NAME_SIZE 20
 
 /*common*/
