@@ -13,7 +13,7 @@
 
 static bool is_other(bool other[],size_t);
 static void other_print(struct nw_other *,bool [],size_t);
-static int yes_no(const char *msg, const char *realval);
+int yes_no(const char *msg, const char *realval);
 static int cli_ser(const char *msg, const char *realval);
 static void peer_print(struct nw_peer_entry *,char *);
 static int check_self(const char *);
@@ -792,7 +792,7 @@ static int on_off(const char *msg,const char *realval)
 		msg, realval);
 	return -1;
 }
-static int yes_no(const char *msg, const char *realval)
+int yes_no(const char *msg, const char *realval)
 {
 	fprintf(stderr,
 		"Error: argument of \"%s\" must be \"yes\" or \"no\", not \"%s\"\n",

@@ -148,7 +148,7 @@ int nw_load_conf(char *path)
 	char ipaddr[16];
 	char netmask[16];
 	char log[4];
-	char ownid[MAX_PEERNAME_LENGTH];
+	//char ownid[MAX_PEERNAME_LENGTH];
 	bool is_static = false;
 	char peer_id[MAX_PEERNAME_LENGTH];
 	u32 peer_ip;
@@ -201,8 +201,10 @@ int nw_load_conf(char *path)
 					}
 				}else if(strcmp(thisOpt->key,"log") == 0)
 				{
-					if(find_value(thisOpt,"yes") == 0 || find_value(thisOpt,"no")== 0)
+					if(strcmp(thisVal->string,"yes") == 0 || strcmp(thisVal->string,"no") == 0 )
 						strcpy(log,thisVal->string);
+					else
+						goto Failed;
 				}else if(strncmp(thisOpt->key,"peer",4) == 0)
 				{
 					if(check_opt_peer(dev,thisVal->string,peer_id,&peer_ip,&peer_port))
@@ -225,6 +227,7 @@ int nw_load_conf(char *path)
 				}
 				else if(strcmp(thisOpt->key,"budget")==0)
 				{
+					assert(thisVal->string != NULL);
 					if(get_unsigned32(&o.budget,thisVal->string,10))
 					{	
 						fprintf(stderr,"Not a valid unsigned int value\n");
@@ -233,11 +236,16 @@ int nw_load_conf(char *path)
 				}
 				else if(strcmp(thisOpt->key,"oneclient")== 0)
 				{
-					if(find_value(thisOpt,"yes")!=0 ||find_value(thisOpt,"no")!=0)
+					
+					if(find_value(thisOpt,"yes") == 0 ||find_value(thisOpt,"no") == 0)
 					{
-						fprintf(stderr,"Only yes or no.\n");
+						strcpy(o.oneclient,thisVal->string);
+					} 
+					else 
+					{
+						fprintf(stderr,"Only yes or no.\n");	
+						goto Failed;
 					}
-					strcpy(o.oneclient,thisVal->string);
 				}
 				else if(strcmp(thisOpt->key,"queuelen") == 0)
 				{
@@ -293,7 +301,7 @@ int nw_load_conf(char *path)
 				else if(strcmp(thisOpt->key,"ownid")==0)
 				{
 					assert(thisVal->string !=NULL);
-					strcpy(ownid,thisVal->string);
+					strcpy(s.peerid,thisVal->string);
 				}else if(strcmp(thisOpt->key,"mptcp") == 0)
 				{
 					assert(strcmp(thisVal->string,"yes")== 0 || strcmp(thisVal->string,"no") == 0);
