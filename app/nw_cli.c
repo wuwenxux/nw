@@ -98,12 +98,12 @@ void  nw_usage(void)
 			"						[ oneclient {yes|no} ]|\n"
 			"						[ batch BATCHSIZE ]|\n"
 			"						[ idletimeout TIMEINTERVAL ]|\n"
-			"						[ log ]\n"
+			"						[ log {yes|no} ]\n"
 			"						[ ownid OWNID ]\n"
 			"						[ switchtime SWITCHTIME]\n"
 			"						[ mode { client | server } ]\n"
 			"	nw load FILE\n"
-			"	nw save DEV\n"
+			"	nw save DEVICE\n"
 			"	nw show [ DEVICE | dev DEVICE ][status]{ PEERID | peer PEERID }\n"
 			"	nw ver\n"
 			"	nw stat 	[ DEVICE | dev DEVICE ]\n"
@@ -481,7 +481,6 @@ FAILED:
 	free(entry);
 	return -1;
 }
-
 int nw_dev_set(int argc, char **argv)
 {
 	struct nw_other other;
@@ -492,7 +491,6 @@ int nw_dev_set(int argc, char **argv)
 	bool set_mptcp = false;
 	char *dev = NULL;
 	char mptcp[4];
-	char mptcp_cmd[40];
 
 	memset(&other,0,sizeof(struct nw_other));
 	memset(&bind,0,sizeof(struct nw_bind));
@@ -701,17 +699,24 @@ int nw_dev_set(int argc, char **argv)
 	}
 	if(set_mptcp)
 	{
-		sprintf(mptcp_cmd,"ip link set %s multipath %s",dev,mptcp);
-		if( system(mptcp_cmd))
-		{
-			fprintf(stderr,"multipath exec err.");
-			exit(EXIT_FAILURE);
-		}
+		if(nw_mptcp_set(dev,true))
+			return -1;
 	}
 	printf("Success!\n");
 	return 0 ;
 }
 
+int nw_mptcp_set(char *dev ,bool on_off)
+{
+	char mptcp_cmd[40];
+	sprintf(mptcp_cmd,"ip link set %s multipath %s",dev,on_off?"on":"off");
+	if( system(mptcp_cmd))
+	{
+		fprintf(stderr,"multipath exec err.");
+		return -1;
+	}
+	return 0;
+}
 //dev DEVICE
 int nw_dev_connect(int argc, char **argv)
 {	
@@ -830,7 +835,7 @@ static void other_print(struct nw_other *other,bool is_other[],size_t size)
 	if(is_other[1])
 		fprintf(stdout,"budget 		\t%-10d    \n",other->budget);
 	if(is_other[2])
-		fprintf(stdout,"queuelen   \t%-10dK   \n",other->queuelen);
+		fprintf(stdout,"queuelen   \t%-10d   \n",other->queuelen);
 	if(is_other[3])
 		fprintf(stdout,"oneclient  \t%-10s    \n",strcmp(other->oneclient,"yes")==0?"yes":"no");
 	if(is_other[4])

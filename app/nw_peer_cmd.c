@@ -101,7 +101,7 @@ int nw_peer_change(int argc, char **argv)
 		printf("Success!\n");
 	}else
 	{
-		fprintf(stderr,"Error: Peerid is not exist.\n");
+		fprintf(stderr,"Error: peerid \'%s\' of Device \'%s\' is not exist.\n",peerid,dev);
 	}
 	goto SUCCESS;
 SUCCESS:

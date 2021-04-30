@@ -46,7 +46,7 @@ struct nw_option
 struct nw_value{
     char *string;
     struct nw_value *next;
-}val;
+};
 
 
 /**
@@ -113,5 +113,4 @@ int nw_setup_peer(struct nw_peer_entry *e_ptr);
  * @file:the nw_file object to close
  **/
 void file_close(struct nw_file **file);
-
 #endif

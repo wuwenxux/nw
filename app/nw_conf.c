@@ -147,13 +147,13 @@ int nw_load_conf(char *path)
 	char dev[IF_NAMESIZE];
 	char ipaddr[16];
 	char netmask[16];
-	u32 mode;
-	u16 bindport;
 	char log[4];
+	char ownid[MAX_PEERNAME_LENGTH];
 	bool is_static = false;
 	char peer_id[MAX_PEERNAME_LENGTH];
 	u32 peer_ip;
 	u16 peer_port;
+	bool set_mptcp;
 
 	if((file = file_open(path))== NULL)
 	{
@@ -186,21 +186,16 @@ int nw_load_conf(char *path)
 					strcpy(ipaddr,thisVal->string);
 				}else if(strcmp(thisOpt->key,"netmask") == 0)
 				{
-					if(check_netmask(thisVal->string))
-					{
-						fprintf(stderr,"Invalid netmask.\n");
-						goto Failed;
-					}
 					strcpy(netmask,thisVal->string);
 				}else if(strcmp(thisOpt->key,"mode") == 0)
 				{
 					if(find_value(thisOpt,"client") == 0)
-						mode = NW_MODE_CLIENT;
+						t.mode = NW_MODE_CLIENT;
 					else if(find_value(thisOpt,"server") == 0)
-						mode = NW_MODE_SERVER;
+						t.mode = NW_MODE_SERVER;
 				}else if(strcmp(thisOpt->key,"bindport")== 0)
 				{
-					if(get_unsigned16(&bindport,thisVal->string,10))
+					if(get_unsigned16(&b.port,thisVal->string,10))
 					{	
 						fprintf(stderr,"Not a valid unsigned short value\n");
 					}
@@ -210,8 +205,11 @@ int nw_load_conf(char *path)
 						strcpy(log,thisVal->string);
 				}else if(strncmp(thisOpt->key,"peer",4) == 0)
 				{
-					assert(check_ifname(dev) == 0);
-					assert(check_opt_peer(dev,thisVal->string,peer_id,&peer_ip,&peer_port)==0);
+					if(check_opt_peer(dev,thisVal->string,peer_id,&peer_ip,&peer_port))
+					{
+						fprintf(stderr,"Invalid peer opts.");
+						goto Failed;
+					}
 					strcpy(entry->peerid[peerIndex],peer_id);
 					entry->ip[peerIndex] = peer_ip;
 					entry->port[peerIndex] = peer_port;
@@ -221,7 +219,8 @@ int nw_load_conf(char *path)
 					assert(thisVal->string != NULL);
 					if(get_unsigned32(&o.bufflen,thisVal->string,10))
 					{	
-						fprintf(stderr,"Not a valid unsigned short value\n");
+						fprintf(stderr,"Not a valid unsigned short value\n.");
+						goto Failed;
 					}
 				}
 				else if(strcmp(thisOpt->key,"budget")==0)
@@ -229,31 +228,55 @@ int nw_load_conf(char *path)
 					if(get_unsigned32(&o.budget,thisVal->string,10))
 					{	
 						fprintf(stderr,"Not a valid unsigned int value\n");
+						goto Failed;
 					}
 				}
 				else if(strcmp(thisOpt->key,"oneclient")== 0)
 				{
-					assert(find_value(thisOpt,"yes")==0 ||find_value(thisOpt,"no")==0);
+					if(find_value(thisOpt,"yes")!=0 ||find_value(thisOpt,"no")!=0)
+					{
+						fprintf(stderr,"Only yes or no.\n");
+					}
 					strcpy(o.oneclient,thisVal->string);
 				}
 				else if(strcmp(thisOpt->key,"queuelen") == 0)
 				{
-					assert(get_unsigned32(&o.queuelen,thisVal->string,10));
+					if(get_unsigned32(&o.queuelen,thisVal->string,10))
+					{
+						fprintf(stderr,"Invalid queuelen val.\n");
+						goto Failed;
+					}
 				}
 				else if(strcmp(thisOpt->key,"idletimeout")==0)
 				{
-					assert(get_unsigned32(&o.idletimeout,thisVal->string,10));
+					assert(get_unsigned32(&o.idletimeout,thisVal->string,10) == 0);
+					if(get_unsigned32(&o.idletimeout,thisVal->string,10))
+					{
+						fprintf(stderr,"Invalid idletimeout value.\n");
+						goto Failed;
+					}
 				}
 				else if(strcmp(thisOpt->key,"batch") == 0)
 				{
-					assert(get_unsigned32(&o.batch,thisVal->string,10));	
+					assert(get_unsigned32(&o.batch,thisVal->string,10) == 0);
+					if(get_unsigned32(&o.batch,thisVal->string,10))
+					{
+						fprintf(stderr,"Invalid batch value.\n");
+						goto Failed;
+					}
 				}
 				else if(strcmp(thisOpt->key,"swtichtimeout")==0)
 				{
-					assert(get_unsigned32(&o.idletimeout,thisVal->string,10));
+					assert(get_unsigned32(&o.switchtime,thisVal->string,10)==0);
+					if(get_unsigned32(&o.switchtime,thisVal->string,10))
+					{
+						fprintf(stderr,"Invalid switchtime value\n");
+						goto Failed;
+					}
 				}
 				else if(strcmp(thisOpt->key,"interval")==0)
 				{
+					assert(get_unsigned32(&o.switchtime,thisVal->string,10)==0);
 					if(get_unsigned32(&p.interval,thisVal->string,10))
 					{
 						fprintf(stderr,"Not a valid unsigned int value\n");
@@ -262,11 +285,22 @@ int nw_load_conf(char *path)
 				else if(strcmp(thisOpt->key,"timeout")==0)
 				{
 					assert(get_unsigned32(&p.timeout,thisVal->string,10) == 0);
+					if(get_unsigned32(&p.timeout,thisVal->string,10))
+					{
+						fprintf(stderr,"Not a valid unsigned int value\n");
+					}
 				}
 				else if(strcmp(thisOpt->key,"ownid")==0)
 				{
 					assert(thisVal->string !=NULL);
-					strcpy(s.peerid,thisVal->string);
+					strcpy(ownid,thisVal->string);
+				}else if(strcmp(thisOpt->key,"mptcp") == 0)
+				{
+					assert(strcmp(thisVal->string,"yes")== 0 || strcmp(thisVal->string,"no") == 0);
+					if(strcmp(thisVal->string,"yes") == 0)
+						set_mptcp = true;
+					else 
+						set_mptcp =false;
 				}
 				thisVal = thisVal->next;
 			}
@@ -281,7 +315,7 @@ int nw_load_conf(char *path)
 				fprintf(stderr,"Setup %s failed\n",dev);
 				goto Failed;
 			}
-			fprintf(stdout,"Device %s setup success\n",dev);
+			fprintf(stdout,"\nDevice %s setup success\n",dev);
 		}
 		if(o.batch||o.bufflen||o.idletimeout||o.switchtime||o.budget||o.queuelen||strlen(o.oneclient)||strlen(o.showlog))
 		{
@@ -290,7 +324,7 @@ int nw_load_conf(char *path)
 		}
 		if(p.interval&&p.timeout)
 		{	
-			if(p.interval <p.timeout)
+			if(p.interval < p.timeout)
 			{	
 				if(nw_ping_set(dev,&p))
 					goto Failed;
@@ -300,15 +334,18 @@ int nw_load_conf(char *path)
 				fprintf(stderr,"interval comes earlier than timeout.\n");
 			}
 		}
-		if(bindport)
+		if(b.port)
 		{
-			b.port = bindport;
 			if(nw_bind_set(dev,&b))
 				goto Failed;
 		}
-		if(mode)
+		if(strlen(s.peerid))
 		{
-			t.mode  = mode;
+			if(nw_self_set(dev,&s))
+				goto Failed;
+		}
+		if(t.mode)
+		{
 			if(nw_type_set(dev,&t))
 				goto Failed;
 		}
@@ -325,7 +362,17 @@ int nw_load_conf(char *path)
 			if(nw_do_add(dev,entry))
 				goto Failed;
 		}
+		if(set_mptcp)
+		{
+			if(nw_mptcp_set(dev,set_mptcp))
+				goto Failed;
+		}
 		free(entry);
+		memset(&o,0,sizeof(struct nw_other));
+		memset(&s,0,sizeof(struct nw_self));
+		memset(&b,0,sizeof(struct nw_bind));
+		memset(&t,0,sizeof(struct nw_type));
+		memset(&p,0,sizeof(struct nw_ping));
 		printf("\n");
 		thisConf = thisConf->next;
 	}
@@ -435,11 +482,7 @@ int nw_save_conf(const char *dev)
 	{
 		ret = -1;
 		goto RETURN;
-	}/*
-	for(i = 0 ; i < npe->count;i++)
-	{
-		printf("\n%s\n",npe->peerid[i]);
-	}*/
+	}
 	if(nw_self_read(dev,&s))
 	{
 		ret =-1;
@@ -452,12 +495,11 @@ int nw_save_conf(const char *dev)
 		goto RETURN;
 	}
 	//write
-	/*if(get_ip_mask(dev,ip,mask))
+	if(get_ip_mask(dev,ip,mask))
 	{
 		perror("Failed to get dev ip and mask.\n");
 	}
 	printf("%s %s %s\n",dev,ip,mask);
-	*/
 	nw_dev_conf_export(fp,dev,ip,mask,&o,&b,&p,&t,&s,&npe);
 
 	goto RETURN;
@@ -483,7 +525,7 @@ int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 		fprintf(stderr,"%s is already exist. change a ifname\n",dev);
 		return -1;
 	}
-	printf("ifname:%s\n",dev);
+//	printf("ifname:%s\n",dev);
 	sprintf(dev_cmd,"sudo ip link add %s type ngmwan",dev);
 	strcpy(ip_v4,ip_str);
 	assert(check_ipv4(ip_v4)==0);

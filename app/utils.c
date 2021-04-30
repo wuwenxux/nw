@@ -13,7 +13,7 @@
 int get_ip_mask(const char *dev,char *ip_str,char *mask)
 {
 	struct ifaddrs *ifaddr, *ifa;
-    int family, s;
+    int s;
 
 	assert(dev !=NULL);
     if (getifaddrs(&ifaddr) == -1) 
@@ -26,8 +26,8 @@ int get_ip_mask(const char *dev,char *ip_str,char *mask)
         if (ifa->ifa_addr == NULL)
             continue;  
 
-		s=getnameinfo(ifa->ifa_addr,sizeof(struct sockaddr_in),&ip_str, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
-        s=getnameinfo(ifa->ifa_netmask,sizeof(struct sockaddr_in),&mask, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+		s=getnameinfo(ifa->ifa_addr,sizeof(struct sockaddr_in),ip_str, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+        s=getnameinfo(ifa->ifa_netmask,sizeof(struct sockaddr_in),mask, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
 		if((strcmp(ifa->ifa_name,dev)==0)&&(ifa->ifa_addr->sa_family==AF_INET))
         {
 			if(s != 0)
@@ -35,8 +35,8 @@ int get_ip_mask(const char *dev,char *ip_str,char *mask)
 				printf("getnameinfo() failed: %s\n", gai_strerror(s));
 				exit(EXIT_FAILURE);
 			}
- 			strcpy(ip_str,ifa->ifa_addr); 
-			strcpy(mask,ifa->ifa_netmask);
+ 			strcpy(ip_str,ifa->ifa_addr->sa_data); 
+			strcpy(mask,ifa->ifa_netmask->sa_data);
 		}
     }
     freeifaddrs(ifaddr);
