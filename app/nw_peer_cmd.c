@@ -136,7 +136,7 @@ int nw_peer_del(int argc, char ** argv)
 			}
 			else
 			{
-				for(cur = strtok(*argv,",");cur != NULL;cur=strtok(NULL,","),i++)
+				for(cur = strtok(*argv,","); cur != NULL; cur = strtok(NULL,","), i++)
 				{
 					strcpy(entry->peerid[i],cur);
 				}
@@ -163,7 +163,6 @@ int nw_peer_del(int argc, char ** argv)
 				free(entry);
 				invarg("not a running nw dev.",*argv);
 			}
-			dev = *argv;
 		}
 		argc--;	argv++;
 	}
@@ -179,8 +178,10 @@ int nw_peer_del(int argc, char ** argv)
 		{
 			goto FAILED;
 		}
-		else 
+		else
+		{
 			printf("Success!\n");
+		}	
 	}
 		goto SUCCESS;
 SUCCESS:
@@ -227,7 +228,7 @@ int check_opt_peer(const char *dev, char *value,char *peerid,u32 *nl_ip, u16 *v_
 		goto Success;
 	}else
 	{
-		fprintf(stderr,"Peer id is dulplicate.%s\n",id);
+		fprintf(stderr,"Peer id is dulplicate. ");
 		goto Failed;
 	}
 Failed:

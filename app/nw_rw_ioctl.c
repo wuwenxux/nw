@@ -267,7 +267,7 @@ void do_read(struct nw_oper_head *head)
 		fprintf(stdout,"budget 	   \t%d    \n",other->budget);
 		fprintf(stdout,"oneclient  \t%s    \n",strcmp(other->oneclient,"yes")== 0?"yes":"no");
 		fprintf(stdout,"log   	   \t%s    \n",strcmp(other->showlog,"yes") ==0?"yes":"no");
-		fprintf(stdout,"queuelen   \t%dK    \n",other->queuelen);
+		fprintf(stdout,"queuelen   \t%d    \n",other->queuelen);
 		fprintf(stdout,"idletimeout\t%ds    \n",other->idletimeout);
 		fprintf(stdout,"batch      \t%d   \n",other->batch?other->batch:0);
 		fprintf(stdout,"switchtime \t%ds	  \n",other->switchtime);

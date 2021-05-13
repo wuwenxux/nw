@@ -13,12 +13,8 @@
 
 static bool is_other(bool other[],size_t);
 static void other_print(struct nw_other *,bool [],size_t);
-int yes_no(const char *msg, const char *realval);
-static int cli_ser(const char *msg, const char *realval);
 static void peer_print(struct nw_peer_entry *,char *);
-static int check_self(const char *);
 static void ping_print(struct nw_ping *,bool[]);
-static int on_off(const char *,const char *);
 
 
 /*nw ver*/
@@ -40,7 +36,7 @@ void nw_set_usage(void)
 {
 	fprintf(stderr, "Usage:...set dev DEV  TYPE\n"
 					"						bufflen     BUFFLEN\n"
-				    "						budget  MAXBUFLEN\n"
+				    "						budget  	MAXBUFLEN\n"
 				    "						queuelen    QUEUELEN\n"
 				    "						idletimeout TIMEVALUE\n"
 					"						oneclient   YES|NO\n"
@@ -84,10 +80,10 @@ void nw_connect_usage(void)
 void  nw_usage(void)
 {
 	fprintf(stderr,"Usage:					\n"
-			"	nw add    { DEVICE | dev DEVICE}"
+			"	nw add    { DEVICE | dev DEVICE }"
 			"	[ peerid  PEERID peerip PEERIP peerport PEERPORT ]\n"
 			" 	nw change { DEVICE | dev DEVICE } "
-			"	[ peerid PEERID PEERIP PEERPORT ]\n "
+			"	[ peerid  PEERID peerip PEERIP peerport PEERPORT ]\n "
             "	nw del	  { DEVICE | dev DEVICE }   	{ peer PEERID | PEERSID }\n"
 			" 	nw set 	  { DEVICE | dev DEVICE }\n"
 			"					 	[ bindport PORTNUM ]|\n"
@@ -103,7 +99,7 @@ void  nw_usage(void)
 			"						[ switchtime SWITCHTIME]\n"
 			"						[ mode { client | server } ]\n"
 			"	nw load FILE\n"
-			"	nw save DEVICE\n"
+			"	nw save FILE\n"
 			"	nw show [ DEVICE | dev DEVICE ][status]{ PEERID | peer PEERID }\n"
 			"	nw ver\n"
 			"	nw stat 	[ DEVICE | dev DEVICE ]\n"
@@ -161,7 +157,8 @@ const char *dev_stat_str[]=
 int main(int argc,char *argv[])
 {
 	char *path = DEFAULT_CONF_FILE;
-	char *dev = NULL;
+	char *save_path = DEFAULT_SAVE_FILE;	
+//	char *dev = NULL;
 	if(argc < 2 ) 
 	{
 		nw_usage();
@@ -203,14 +200,14 @@ int main(int argc,char *argv[])
 			if(NEXT_ARG_OK())
 			{
 				NEXT_ARG();
-				if(check_nw_if(*argv))
-				{
-					invarg("dev is not existed.",*argv);
-				}
-				dev = *argv;
+				if(check_filepath(*argv))
+				save_path = *argv;
+			}else
+			{
+				save_path = DEFAULT_SAVE_FILE;
 			}
-			printf("%s dev",dev);
-			return nw_save_conf(dev);
+			//printf("%s dev",dev);
+			return nw_save_conf(save_path);
 		}
 		else if(matches (*argv,"add") == 0)
 		{
@@ -228,15 +225,15 @@ int main(int argc,char *argv[])
 		{
 			return nw_dev_close(argc-1,argv+1);
 		}
-		else if(matches(*argv,"help") == 0)
+		else if(matches(*argv,"help") == 0 ||matches(*argv,"--help") == 0 ||matches(*argv,"-help") == 0||matches(*argv,"--h") == 0||matches(*argv,"-h") == 0)
 		{
 			nw_usage();
-		}else if(matches(*argv,"ver") == 0 || matches(*argv,"version")== 0 ||matches(*argv,"-ver")==0 || matches(*argv,"-v") == 0)
+		}else if(matches(*argv,"ver") == 0 || matches(*argv,"version")== 0||matches(*argv,"--version")== 0 || matches(*argv,"--v")== 0 ||matches(*argv,"-ver")==0 || matches(*argv,"-v") == 0||matches(*argv,"--v") == 0)
 		{
 			nw_ver();
 		}
 	}
-	fprintf(stderr, "Command \"%s\" is unknown, try \"nw help\".\n",*argv);
+	fprintf(stderr, "Command \"%s\" is unknown, try \"nw --help \".\n",*argv);
 	return 0;
 }
 
@@ -490,7 +487,7 @@ int nw_dev_set(int argc, char **argv)
 	struct nw_self self;
 	bool set_mptcp = false;
 	char *dev = NULL;
-	char mptcp[4];
+	bool mptcp= false;
 
 	memset(&other,0,sizeof(struct nw_other));
 	memset(&bind,0,sizeof(struct nw_bind));
@@ -633,9 +630,9 @@ int nw_dev_set(int argc, char **argv)
 				NEXT_ARG();
 				set_mptcp = true;
 			if(strcmp(*argv,"on") == 0)
-				strncpy(mptcp,"on",3);
+				mptcp = true;
 			else if (strcmp(*argv,"off") == 0)
-				strncpy(mptcp,"off",4);
+				mptcp = false;
 			else
 				return on_off("multipath",*argv);
 			}else
@@ -699,7 +696,7 @@ int nw_dev_set(int argc, char **argv)
 	}
 	if(set_mptcp)
 	{
-		if(nw_mptcp_set(dev,true))
+		if(nw_mptcp_set(dev,mptcp))
 			return -1;
 	}
 	printf("Success!\n");
@@ -709,7 +706,7 @@ int nw_dev_set(int argc, char **argv)
 int nw_mptcp_set(char *dev ,bool on_off)
 {
 	char mptcp_cmd[40];
-	sprintf(mptcp_cmd,"ip link set %s multipath %s",dev,on_off?"on":"off");
+	sprintf(mptcp_cmd,"sudo ip link set %s multipath %s",dev,on_off?"on":"off");
 	if( system(mptcp_cmd))
 	{
 		fprintf(stderr,"multipath exec err.");
@@ -735,7 +732,7 @@ int nw_dev_connect(int argc, char **argv)
 
 	while(argc > 0)
 	{
-		if(strcmp(*argv,"help") == 0)
+		if(strcmp(*argv,"help") == 0 ||strcmp(*argv,"-help") == 0|| strcmp(*argv,"--help") == 0 || strcmp(*argv,"--h") == 0 ||strcmp(*argv,"-h") == 0)
 		{
 			nw_connect_usage();
 		}
@@ -785,7 +782,7 @@ const char* mode_str( u32 mode)
 	else
 		return "client";
 }
-static int on_off(const char *msg,const char *realval)
+int on_off(const char *msg,const char *realval)
 {
 	fprintf(stderr,
 		"Error: argument of \"%s\" must be \"on\" or \"off\", not \"%s\"\n",
@@ -799,14 +796,14 @@ int yes_no(const char *msg, const char *realval)
 		msg, realval);
 	return -1;
 }
-static int cli_ser(const char *msg, const char *realval)
+int cli_ser(const char *msg, const char *realval)
 {
 	fprintf(stderr,
 		"Error: argument of \"%s\" must be \"client\" or \"server\", not \"%s\"\n",
 		msg, realval);
 	return -1;
 }
-static int check_self(const char *id)
+int check_self(const char *id)
 {
     if(strlen(id) > MAX_PEERNAME_LENGTH)
         return PEERIDERR;
@@ -850,9 +847,9 @@ static void other_print(struct nw_other *other,bool is_other[],size_t size)
 static void ping_print(struct nw_ping *ping,bool is_ping[])
 {
 	if(is_ping[0])
-		fprintf(stdout,"interval   \t%-10dms   \n",ping->interval);
+		fprintf(stdout,"interval   \t%dms   \n",ping->interval);
 	if(is_ping[1])
-		fprintf(stdout,"timeout    \t%-10dms   \n",ping->timeout);
+		fprintf(stdout,"timeout    \t%dms   \n",ping->timeout);
 }
 static void peer_print(struct nw_peer_entry *entry,char *id)
 {

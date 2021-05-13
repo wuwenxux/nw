@@ -22,6 +22,10 @@
 #define NEXT_ARG_OK() (argc - 1 > 0)
 #define NEXT_ARG_FWD() do { argv++; argc--; } while(0)
 #define PREV_ARG() do { argv--; argc++; } while(0)
+int yes_no(const char *msg, const char *realval);
+int cli_ser(const char *msg, const char *realval);
+int on_off(const char *,const char *);
+int check_self(const char *);
 /**
  * Note:not a valid argu message
  * @msg:error promopt

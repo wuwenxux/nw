@@ -40,6 +40,7 @@ void nw_peer_usage();
 void nw_self_usage();
 void nw_mode_usage();
 void nw_set_usage();
+
 /*other,type,ping,bind */
 /**
  * These funcs below just do two thing :read and write configure of the ngmwan interface by ioctl.
@@ -132,7 +133,6 @@ bool is_exist(const char *dev,char *id);
  * @entry:entry of peers.
  **/ 
 int nw_do_peer_list(const char *dev,struct nw_peer_entry *entry);
-
 /*connect*/
 /**
  * A ioctl request to connect a peer 
@@ -149,7 +149,6 @@ int nw_dev_connect(int argc, char **argv);
  **/
 int nw_dev_close(int argc,char **argv);
 
-
 /*conf*/
 /**
  * Load a a conf file with openwrt configuration format.
@@ -158,13 +157,14 @@ int nw_dev_close(int argc,char **argv);
  * @path:the path to the file ,filename is included.
  **/
 int nw_load_conf(char *path);
+
 /**
  * Save a nw dev  to a config file which is compatiable with openwrt configuration format
  * Dev shoudld be a valid ngmwan interface. 
  * Return :only dev is enough.
  * @dev:name of the device, which can be found throug ip link.
  **/
-int nw_save_conf(const char *dev );
+int nw_save_conf(char *path);
 /**
  * Convert a mode value to char *
  * Note: only "client" and "server" are returned.
@@ -182,8 +182,6 @@ u32 str_mode(const char *mode);
  * @dev:check whether dev is a running ngmwan interface.
  **/
 int nw_search_if(char *dev);
-
-
 
 /*read*/
 /**

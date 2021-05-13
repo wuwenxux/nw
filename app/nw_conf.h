@@ -43,6 +43,10 @@ struct nw_option
     struct nw_value *values;
     struct nw_option *next;
 };
+/**
+ * A value list of nw option.
+ * option key : value, value ,values...
+ **/
 struct nw_value{
     char *string;
     struct nw_value *next;
@@ -84,14 +88,15 @@ int nw_setup_dev(const char *dev, char *ip,char *mask);
  * Load config and configure nw_other info.
  * Return:0 Success ,DEV_NOT_FOUND,IOCTLERR,CHECKERR Failed.
  * @config: a ptr of listhead which points to nw_config.
+ *int nw_setup_other(struct nw_other *o_ptr); 
  **/
-int nw_setup_other(struct nw_other *o_ptr);
 /**
  * Load config and configure nw_peer_entry info.
  * Return: 0 Success , CMDERR,DEV_NOT_FOUND ,MEMERR Failed.
  * @config:a ptr of listhead which points to nw_config.
- **/
-int nw_setup_peer(struct nw_peer_entry *e_ptr);
+ *
+ *int nw_setup_peer(struct nw_peer_entry *e_ptr);
+ */
 /*util*/
 /**
  * Convert  from a u32 value to a client/server str.
@@ -113,4 +118,8 @@ int nw_setup_peer(struct nw_peer_entry *e_ptr);
  * @file:the nw_file object to close
  **/
 void file_close(struct nw_file **file);
+/*remove all nw dev */
+static void nw_clear();
+/*save one nw dev conf*/
+static int nw_save_dev(FILE *fp,const char *dev);
 #endif

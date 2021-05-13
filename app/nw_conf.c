@@ -6,7 +6,7 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include "nw_conf.h"
-#define trim_str "\'\""
+#define trim_str " \'\""
 
 /**
  * Add a configuration of ngmwan and return nw_config object,like:config interface 'nwconf1';
@@ -154,7 +154,9 @@ int nw_load_conf(char *path)
 	u32 peer_ip;
 	u16 peer_port;
 	bool set_mptcp;
-
+	printf("Removing previous configuration....\n\n");
+	sleep(2);
+	nw_clear();
 	if((file = file_open(path))== NULL)
 	{
 		fprintf(stderr,"Can't open path %s",path);
@@ -163,9 +165,8 @@ int nw_load_conf(char *path)
 	thisConf = file->configs;
 	while(thisConf)
 	{
-		printf("\nset up %s",thisConf->name);
+		printf("set up %s",thisConf->name);
 		peerIndex = 0;
-		entry = calloc(1,sizeof(struct nw_peer_entry));	
 		thisOpt = thisConf->options;
 		while(thisOpt)
 		{	
@@ -174,7 +175,7 @@ int nw_load_conf(char *path)
 			while(thisVal)
 			{
 				printf("%s ",thisVal->string);
-				if(strcmp(thisOpt->key,"ifname")==0)
+				if(strcmp(thisOpt->key,"ifname")==0 )
 				{
 					strcpy(dev ,thisVal->string);
 				}else if(strcmp(thisOpt->key,"proto") == 0)
@@ -212,10 +213,14 @@ int nw_load_conf(char *path)
 						fprintf(stderr,"Invalid peer opts.");
 						goto Failed;
 					}
+					if(peerIndex == 0)
+					{
+						entry = calloc(1,sizeof(struct nw_peer_entry));	
+					}
 					strcpy(entry->peerid[peerIndex],peer_id);
 					entry->ip[peerIndex] = peer_ip;
 					entry->port[peerIndex] = peer_port;
-					peerIndex++;
+						peerIndex++;
 				}else if(strcmp(thisOpt->key,"bufflen") == 0)
 				{
 					assert(thisVal->string != NULL);
@@ -298,32 +303,37 @@ int nw_load_conf(char *path)
 						fprintf(stderr,"Not a valid unsigned int value\n");
 					}
 				}
-				else if(strcmp(thisOpt->key,"ownid")==0)
-				{
-					assert(thisVal->string !=NULL);
+				else if(strcmp(thisOpt->key,"ownid")==0 && check_self(thisVal->string)== 0)
+				{	
 					strcpy(s.peerid,thisVal->string);
-				}else if(strcmp(thisOpt->key,"mptcp") == 0)
+				}else if(strcmp(thisOpt->key,"multipath") == 0 || strcmp(thisOpt->key,"mptcp") == 0)
 				{
-					assert(strcmp(thisVal->string,"yes")== 0 || strcmp(thisVal->string,"no") == 0);
-					if(strcmp(thisVal->string,"yes") == 0)
+					 if(strcmp(thisVal->string,"on") == 0)
+					{
 						set_mptcp = true;
-					else 
+					}
+					else if(strcmp(thisVal->string,"off") == 0)
+					{ 
 						set_mptcp =false;
+					}else 
+					{
+						on_off("multipath",thisVal->string);
+						goto Failed;
+					}
 				}
 				thisVal = thisVal->next;
 			}
-
 			thisOpt = thisOpt->next;
 		}
-		if(!check_ifname(dev) && !check_ipv4(ipaddr) && !check_netmask(netmask))
+		if(!check_ifname(dev)&& !check_ipv4(ipaddr) && !check_netmask(netmask))
 	   	{
 			ret = nw_setup_dev(dev,ipaddr,netmask);
 			if(ret)
 			{
-				fprintf(stderr,"Setup %s failed\n",dev);
+				fprintf(stderr,"setup %s failed\n",dev);
 				goto Failed;
 			}
-			fprintf(stdout,"\nDevice %s setup success\n",dev);
+			fprintf(stdout,"\ndevice %s setup success\n",dev);
 		}
 		if(o.batch||o.bufflen||o.idletimeout||o.switchtime||o.budget||o.queuelen||strlen(o.oneclient)||strlen(o.showlog))
 		{
@@ -370,17 +380,15 @@ int nw_load_conf(char *path)
 			if(nw_do_add(dev,entry))
 				goto Failed;
 		}
-		if(set_mptcp)
-		{
-			if(nw_mptcp_set(dev,set_mptcp))
+		if(nw_mptcp_set(dev,set_mptcp))
 				goto Failed;
-		}
 		free(entry);
 		memset(&o,0,sizeof(struct nw_other));
 		memset(&s,0,sizeof(struct nw_self));
 		memset(&b,0,sizeof(struct nw_bind));
 		memset(&t,0,sizeof(struct nw_type));
 		memset(&p,0,sizeof(struct nw_ping));
+		sleep(1);
 		printf("\n");
 		thisConf = thisConf->next;
 	}
@@ -394,7 +402,6 @@ Failed:
 	file_close(&file);
 	return -1;
 }
-
 static int nw_overwrite(char *argv)
 {
 	char buf[512], ch;
@@ -427,18 +434,83 @@ static int nw_overwrite(char *argv)
 	}
 	return -1;
 }
-int nw_save_conf(const char *dev)
+int nw_save_conf(char *path)
 {
-	assert(dev != NULL);
-	int ret;
-	//int i ;
-	if (dev == NULL)
+	char *cmd = "ip link show type ngmwan";
+	FILE *fp;
+	FILE *save_fp;
+	int ret ;
+
+	//int j= 0;
+	char *i,*dev;
+	char buf[256];
+	if((save_fp = fopen(path,"r")) == NULL)
 	{
-		ret = -1;
-		perror("Dev is required\n");
+		//do nothing.
+	}else if(nw_overwrite(path) != 0)
+	{
+		ret = 0;
 		goto RETURN;
 	}
-	FILE *fp = NULL;
+	memset(buf,0,sizeof(buf));
+	if(( fp = popen(cmd,"r")) == NULL)
+	{
+		perror(strerror(errno));
+		ret = -1;
+		goto RETURN;
+	}
+	if((save_fp = fopen(path,"w")) == NULL)
+	{
+		ret = -1;
+		goto RETURN;
+	}
+	
+	while(fgets(buf,256,fp) != NULL)
+	{
+		if(*buf != ' ')
+		{
+			i = strtok(buf,":");
+			if(i == NULL)
+			{
+				ret = -1;
+				goto RETURN;
+			}
+			dev = strtok(NULL, ":");
+			if( dev == NULL)
+			{
+				ret = -1;
+				goto RETURN;
+			}
+			trim(dev,trim_str);
+			printf("%s\n",dev);
+			if(nw_save_dev(save_fp,dev))
+			{
+				ret = -1;
+				goto RETURN;
+			}
+		}
+	}
+	goto RETURN;
+RETURN:
+	if(fp != NULL)
+		pclose(fp);
+	if(save_fp != NULL)
+		fclose(save_fp);
+	return ret;
+}
+static int nw_save_dev(FILE *fp,const char *dev)
+{
+	assert(dev != NULL);
+	assert(fp != NULL);
+	int ret = 0;
+	//int i ;
+	if (dev  == NULL)
+	{
+		ret = -1;
+		perror("dev is required\n");
+		goto RETURN;
+	}
+
 	char ip[16];
 	char mask[16];
 	//char *cmd = NULL;
@@ -448,47 +520,36 @@ int nw_save_conf(const char *dev)
 	struct nw_ping p;
 	struct nw_type t;
 	struct nw_peer_entry *npe = NULL;
-	if((fp = fopen(DEFAULT_SAVE_FILE,"r")) == NULL)
-	{
-
-	}else
-	{
-		if(nw_overwrite(DEFAULT_SAVE_FILE) != 0)
-		{
-			//Not save
-			ret = 0;
-			goto RETURN;
-		}
-	}
 	if(nw_other_read(dev,&o))
 	{
 		ret =-1;
-		perror("other info write failure.\n");
+		perror("other info read failure.\n");
 		goto RETURN;
 	}
 	if(nw_ping_read(dev,&p))
 	{
 		ret = -1;
-		perror("ping info write failure.\n");
+		perror("ping info read failure.\n");
 		goto RETURN;
 	}
 	if(nw_type_read(dev,&t))
 	{
 		ret = -1;
-		perror("type info write failure.\n");
+		perror("type info read failure.\n");
 		goto RETURN;
 	}
 	//malloc
 	npe = calloc(1,sizeof(struct nw_peer_entry));
 	if(npe == NULL)
 	{
-		perror("Malloc error.\n");
 		ret = -1;
+		perror("Malloc error.\n");
 		goto RETURN;
 	}
 	if(nw_do_peer_list(dev,npe))
 	{
 		ret = -1;
+		perror("List info read error.\n");
 		goto RETURN;
 	}
 	if(nw_self_read(dev,&s))
@@ -496,12 +557,7 @@ int nw_save_conf(const char *dev)
 		ret =-1;
 		goto RETURN;
 	}
-	printf("NW info allocated.\n");
-	if ((fp = fopen(DEFAULT_SAVE_FILE, "w")) == NULL) {
-		printf("Can not open file.\n");
-		ret = -1;
-		goto RETURN;
-	}
+	printf("NW info allocating.\n");
 	//write
 	if(get_ip_mask(dev,ip,mask))
 	{
@@ -509,14 +565,64 @@ int nw_save_conf(const char *dev)
 	}
 	printf("%s %s %s\n",dev,ip,mask);
 	nw_dev_conf_export(fp,dev,ip,mask,&o,&b,&p,&t,&s,&npe);
-
 	goto RETURN;
 RETURN:
 	if(npe != NULL)
 		free(npe);
-	if(fp != NULL)
-		fclose(fp);
 	return ret;
+}
+static int nw_remove(const char *dev)
+{
+	int ret ;
+	assert(dev != NULL);
+	char rm_cmd[50];
+	sprintf(rm_cmd,"ip link del dev %s",dev);
+	ret = system(rm_cmd);
+	if(ret)
+		return -1;
+	return 0;
+	
+}
+static void nw_clear()
+{
+	char show_cmd[50];
+	FILE *fp = NULL;
+	char buf[256];
+	memset(buf,0,256);
+	sprintf(show_cmd,"ip link show type ngmwan");
+	char *i,
+		 *d;
+	if((fp = popen(show_cmd,"r")) == NULL)
+	{
+		perror(strerror(errno));
+		return ;
+	}
+	while(fgets(buf,256,fp) != NULL)
+	{
+		if(*buf != ' ')
+		{
+			i = strtok(buf,":");
+			if(i == NULL)
+			{
+				pclose(fp);
+				return ;
+			}
+			d = strtok(NULL,":");
+			if(d == NULL)
+			{
+				pclose(fp);
+				return ;
+			}
+			trim(d,trim_str);
+			if(nw_remove(d))
+			{
+				pclose(fp);
+				return ;
+			}
+		}
+	}
+	pclose(fp);
+	return ;
 }
 int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 {
@@ -525,22 +631,20 @@ int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 	char ip_cmd[128];
 	char ip_v4[16];
 	char mask_str[16];
+	//char if_cmd[128];
 
-	
 	assert(dev != NULL);
 	if(check_nw_if(dev) == 0)
 	{
 		fprintf(stderr,"%s is already exist. change a ifname\n",dev);
 		return -1;
 	}
-//	printf("ifname:%s\n",dev);
 	sprintf(dev_cmd,"sudo ip link add %s type ngmwan",dev);
 	strcpy(ip_v4,ip_str);
 	assert(check_ipv4(ip_v4)==0);
 	strcpy(mask_str,netmask);
 	assert(check_netmask(mask_str)==0);
 	sprintf(ip_cmd,"sudo ip addr add %s/%s dev %s ",ip_v4,mask_str,dev);
-	//sudo ip link add dev %s type ngmwan
 	ret = system(dev_cmd);
 	if(ret)
 	{
@@ -781,7 +885,7 @@ static void nw_dev_conf_export(FILE *fp,
 	assert(dev!=NULL);
 	//struct nw_config *thisConfig = NULL;
 	//struct nw_config *preConfig = NULL;
-	fprintf(fp,"\nconfig interface \'%s\'\n","nwconf");
+	fprintf(fp,"config interface \'%s\'\n",dev);
 	fprintf(fp,"\toption ifname \'%s\'\n",dev);
 	fprintf(fp,"\toption proto \'static\'\n");
 	fprintf(fp,"\toption ipaddr \'%s\'\n",dev_ip);
