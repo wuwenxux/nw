@@ -102,7 +102,7 @@ int check_nw_if(const char *dev);
  * Return: 0 SUCCESS, DEVERR, CMDERR, -1 FAILED
  * @dev:name of the device ,which can be found by ip link.
  **/
-int nw_mptcp(char *dev);
+int nw_mptcp(const char *dev);
 /**
  *Trim a string with trim characters like "\'\" "
  *Note: option "hello" --> option hello

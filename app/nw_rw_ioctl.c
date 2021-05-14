@@ -154,31 +154,31 @@ int nw_self_set(const char *dev, struct nw_self*self)
 int nw_ioctl(struct nw_oper_head *head)
 {
     struct ifreq req;
-    int sock,ret;
+    int sock,ret  = 0;
     
 	memset(&req,0,sizeof(req));
     req.ifr_data = (void *)head;
     strcpy(req.ifr_name,head->devname);
-	
 	sock = socket(AF_INET,SOCK_DGRAM,0);
     if(!sock)
     {
         return -1;
     }
     ret = ioctl(sock,NW_OPER,&req);
-    if(ret) 
+	if(ret)
 	{
-		fprintf(stderr,"dev:%s,result :%d \n",head->devname,head->result);
-		goto Failed;
+		fprintf(stderr,"%s type:%d command:%d %s\n",req.ifr_name,head->type,head->command,strerror(errno));
 	}
-	goto Success;
+	close(sock);
+	return !head->result;
+/*
 Failed:
 	close(sock);
 	return -1;
 Success:
 	close(sock);
 	return !head->result;
-}
+*/}
 int nw_search_if( char *dev)
 {
 	FILE *fp;

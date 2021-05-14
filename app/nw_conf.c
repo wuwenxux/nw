@@ -59,7 +59,7 @@ static void nw_dev_conf_export(FILE *,
                             struct nw_ping *,
                             struct nw_type *,
                             struct nw_self *,
-							struct nw_peer_entry **);
+							struct nw_peer_entry **,int mptcp_on);
 struct nw_file *file_open(char *path)
 {
 	char *word = NULL;
@@ -154,7 +154,7 @@ int nw_load_conf(char *path)
 	u32 peer_ip;
 	u16 peer_port;
 	bool set_mptcp;
-	printf("Removing previous configuration....\n\n");
+	printf("Removing previous configuration....\n");
 	sleep(2);
 	nw_clear();
 	if((file = file_open(path))== NULL)
@@ -165,16 +165,16 @@ int nw_load_conf(char *path)
 	thisConf = file->configs;
 	while(thisConf)
 	{
-		printf("set up %s",thisConf->name);
+		//printf("set up %s",thisConf->name);
 		peerIndex = 0;
 		thisOpt = thisConf->options;
 		while(thisOpt)
 		{	
-			printf("\n%s ",thisOpt->key);
+			//printf("\n%s ",thisOpt->key);
 			thisVal = thisOpt->values;
 			while(thisVal)
 			{
-				printf("%s ",thisVal->string);
+				//printf("%s ",thisVal->string);
 				if(strcmp(thisOpt->key,"ifname")==0 )
 				{
 					strcpy(dev ,thisVal->string);
@@ -213,7 +213,6 @@ int nw_load_conf(char *path)
 				{
 					if(check_opt_peer(dev,thisVal->string,peer_id,&peer_ip,&peer_port))
 					{
-						fprintf(stderr,"Invalid peer opts.");
 						ret = -1;
 						goto RETURN;
 					}
@@ -357,7 +356,7 @@ int nw_load_conf(char *path)
 			}
 			else
 			{
-				fprintf(stderr,"interval comes earlier than timeout.\n");
+				fprintf(stderr,"Interval comes earlier than timeout.\n");
 			}
 		}
 		if(b.port)
@@ -397,7 +396,6 @@ int nw_load_conf(char *path)
 		memset(&t,0,sizeof(struct nw_type));
 		memset(&p,0,sizeof(struct nw_ping));
 		sleep(1);
-		printf("\n");
 		thisConf = thisConf->next;
 	}
 	goto RETURN;
@@ -406,6 +404,7 @@ RETURN:
 	file_close(&file);
 	return ret;
 }
+
 static int nw_overwrite(char *argv)
 {
 	char buf[512], ch;
@@ -417,7 +416,7 @@ static int nw_overwrite(char *argv)
 	for(;;) {
 		ch = fgetc(stdin);
 		if (isprint(ch)) {
-			printf("%c", ch);
+		//	printf("%c", ch);
 			strncat(buf, &ch, 1);
 		} else if ((ch == '\n') || (ch == '\r')) {
 			printf("%c", ch);
@@ -443,7 +442,7 @@ int nw_save_conf(char *path)
 	char *cmd = "ip link show type ngmwan";
 	FILE *fp;
 	FILE *save_fp;
-	int ret ;
+	int ret;
 
 	//int j= 0;
 	char *i,*dev;
@@ -468,7 +467,6 @@ int nw_save_conf(char *path)
 		ret = -1;
 		goto RETURN;
 	}
-	
 	while(fgets(buf,256,fp) != NULL)
 	{
 		if(*buf != ' ')
@@ -516,6 +514,7 @@ static int nw_save_dev(FILE *fp,const char *dev)
 	}
 	char ip[16];
 	char mask[16];
+	int on_off = 0;
 	//char *cmd = NULL;
 	struct nw_other *o = calloc(1,sizeof(struct nw_other));
 	struct nw_bind  *b = calloc(1,sizeof(struct nw_bind));
@@ -525,7 +524,7 @@ static int nw_save_dev(FILE *fp,const char *dev)
 	struct nw_peer_entry *npe = calloc(1,sizeof(struct nw_peer_entry));
 	if((ret = nw_other_read(dev,o)))
 	{
-		perror("other info read failure.\n");
+		perror("Nw other info read failure.\n");
 		goto RETURN;
 	}
 	if((ret = nw_ping_read(dev,p)))
@@ -540,21 +539,22 @@ static int nw_save_dev(FILE *fp,const char *dev)
 	}
 	if((ret = nw_bind_read(dev,b)))
 	{
-		perror("bind info read failure.\n");
+		perror("Nw bind info read failure.\n");
 		goto RETURN;
 	}
 	if(npe == NULL)
 	{
-		perror("Malloc error.\n");
+		perror("Nw peer entry malloc error.\n");
 		goto RETURN;
 	}
 	if((ret = nw_do_peer_list(dev,npe)))
 	{
-		perror("List info read error.\n");
+		perror("Nw peer list info read error.\n");
 		goto RETURN;
 	}
 	if((ret = nw_self_read(dev,s)))
 	{
+		perror("Nw self info read error.\n");
 		goto RETURN;
 	}
 	//printf("NW info allocating.\n");
@@ -563,9 +563,8 @@ static int nw_save_dev(FILE *fp,const char *dev)
 	{
 		perror("Failed to get dev ip and mask.\n");
 	}
-//	printf("%s %s %s %d\n",dev,ip,mask,b->port);
-	nw_dev_conf_export(fp,dev,ip,mask,o,b,p,t,s,&npe);
-//	nw_mptcp_export(fp,dev,);
+	on_off = nw_mptcp(dev);
+	nw_dev_conf_export(fp,dev,ip,mask,o,b,p,t,s,&npe,on_off);
 	ret = 0;
 	goto RETURN;
 RETURN:
@@ -882,7 +881,7 @@ static void nw_dev_conf_export(FILE *fp,
                             struct nw_ping *p_ptr,
                             struct nw_type *t_ptr,
                             struct nw_self *s_ptr,
-							struct nw_peer_entry **npe)
+							struct nw_peer_entry **npe,int on_off)
 {
 	int i ;
 	char ip_v4[16];
@@ -912,6 +911,7 @@ static void nw_dev_conf_export(FILE *fp,
 	fprintf(fp,"\toption timeout \'%u\'\n",p_ptr->timeout);
 	fprintf(fp,"\toption ownid \'%s\'\n",s_ptr->peerid);
 	fprintf(fp,"\toption mode \'%s\'\n",t_ptr->mode == NW_MODE_CLIENT ?"client":"server");
+	fprintf(fp,"\toption multipath \'%s\'\n",on_off == 0?"off":"on");
 	for(i = 0; i < (*npe)->count; i++)
 	{
 		if(inet_ntop(AF_INET,&((*npe)->ip[i]),ip_v4,16) == NULL)

@@ -208,29 +208,20 @@ int check_opt_peer(const char *dev, char *value,char *peerid,u32 *nl_ip, u16 *v_
 	assert(port != NULL);
 	if(check_ifname(dev))
 	{
-		fprintf(stderr,"not a valid interface name.\n");
+		fprintf(stderr,"Option with dev %s is not valid.\n",dev);
 		goto Failed;
 	}
 	if(check_ipv4(ip))
 	{
-		fprintf(stderr,"Not a valid ip address.\n");
+		fprintf(stderr,"Option with ip %s is not valid.\n",ip);
 		goto Failed;
 	}
 	if(get_unsigned16(v_port,port,10))
 	{
-		fprintf(stderr,"Not a valid port.\n");
+		fprintf(stderr,"%s not valid.\n",port);
 		goto Failed;
 	}
-	if(!is_exist(dev,id))
-	{
-		assert(inet_pton(AF_INET,ip,nl_ip) > 0);
-		strcpy(peerid,id);
-		goto Success;
-	}else
-	{
-		fprintf(stderr,"Peer id is dulplicate. ");
-		goto Failed;
-	}
+	goto Success;
 Failed:
 	return -1;
 Success:

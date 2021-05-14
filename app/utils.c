@@ -86,7 +86,7 @@ int check_nw_if(const char *str)
 	/* not exist net device */
 	return DEV_NOT_FOUND;
 }
-int nw_mptcp(char *str)
+int nw_mptcp(const char *str)
 {
 	FILE *fp;
 	char buf[256];

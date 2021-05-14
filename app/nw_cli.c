@@ -422,7 +422,7 @@ int nw_dev_show(int argc, char **argv)
 		ret = nw_self_read(dev,&self);
 		do_read(&self.head);
 		ret = nw_mptcp(dev);
-		fprintf(stdout,"multipath  \t%-10s    \n",ret== 0?"no":"yes");
+		fprintf(stdout,"multipath  \t%-10s    \n",ret== 0?"off":"on");
 	}
 	if(is_other(r_other,sizeof(r_other)/sizeof(r_other[0])))
 	{
@@ -707,7 +707,6 @@ int nw_mptcp_read(char *dev)
 	sprintf(mptcp_cmd,"sudo ip link show %s|grep -o NOMULTIPATH ",dev);
 	if(system(mptcp_cmd))
 	{
-		fprintf(stderr,"multipath exec err.\n");
 		return -1;
 	}
 	return 0;
