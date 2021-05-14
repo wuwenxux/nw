@@ -19,7 +19,7 @@ int get_ip_mask(const char *dev,char *ip_str,char *mask)
     if (getifaddrs(&ifaddr) == -1) 
     {
         perror("getifaddrs");
-        exit(EXIT_FAILURE);
+       return -1;
     }
     for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) 
     {
@@ -33,10 +33,10 @@ int get_ip_mask(const char *dev,char *ip_str,char *mask)
 			if(s != 0)
 			{
 				printf("getnameinfo() failed: %s\n", gai_strerror(s));
-				exit(EXIT_FAILURE);
+				return -1;
 			}
- 			strcpy(ip_str,ifa->ifa_addr->sa_data); 
-			strcpy(mask,ifa->ifa_netmask->sa_data);
+ 			ip_str=ifa->ifa_addr->sa_data; 
+			mask=ifa->ifa_netmask->sa_data;
 		}
     }
     freeifaddrs(ifaddr);

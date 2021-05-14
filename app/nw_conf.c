@@ -131,12 +131,12 @@ int nw_load_conf(char *path)
 	struct nw_config *thisConf = NULL;
 	struct nw_option *thisOpt = NULL;
 	struct nw_value *thisVal = NULL;
-	struct nw_peer_entry *entry = NULL;
 	struct nw_self s;
 	struct nw_ping p;
 	struct nw_bind b;
 	struct nw_type t;
 	struct nw_other o;
+	struct nw_peer_entry *entry = calloc(1,sizeof(struct nw_peer_entry));	
 	memset(&o,0,sizeof(struct nw_other));
 	memset(&s,0,sizeof(struct nw_self));
 	memset(&b,0,sizeof(struct nw_bind));
@@ -205,29 +205,30 @@ int nw_load_conf(char *path)
 					if(strcmp(thisVal->string,"yes") == 0 || strcmp(thisVal->string,"no") == 0 )
 						strcpy(log,thisVal->string);
 					else
-						goto Failed;
+					{
+						ret = -1;
+						goto RETURN;
+					}
 				}else if(strncmp(thisOpt->key,"peer",4) == 0)
 				{
 					if(check_opt_peer(dev,thisVal->string,peer_id,&peer_ip,&peer_port))
 					{
 						fprintf(stderr,"Invalid peer opts.");
-						goto Failed;
-					}
-					if(peerIndex == 0)
-					{
-						entry = calloc(1,sizeof(struct nw_peer_entry));	
+						ret = -1;
+						goto RETURN;
 					}
 					strcpy(entry->peerid[peerIndex],peer_id);
 					entry->ip[peerIndex] = peer_ip;
 					entry->port[peerIndex] = peer_port;
-						peerIndex++;
+					peerIndex++;
 				}else if(strcmp(thisOpt->key,"bufflen") == 0)
 				{
 					assert(thisVal->string != NULL);
 					if(get_unsigned32(&o.bufflen,thisVal->string,10))
 					{	
 						fprintf(stderr,"Not a valid unsigned short value\n.");
-						goto Failed;
+						ret = -1;
+						goto RETURN;
 					}
 				}
 				else if(strcmp(thisOpt->key,"budget")==0)
@@ -236,7 +237,8 @@ int nw_load_conf(char *path)
 					if(get_unsigned32(&o.budget,thisVal->string,10))
 					{	
 						fprintf(stderr,"Not a valid unsigned int value\n");
-						goto Failed;
+						ret = -1;
+						goto RETURN;
 					}
 				}
 				else if(strcmp(thisOpt->key,"oneclient")== 0)
@@ -249,7 +251,8 @@ int nw_load_conf(char *path)
 					else 
 					{
 						fprintf(stderr,"Only yes or no.\n");	
-						goto Failed;
+						ret = -1;
+						goto RETURN;
 					}
 				}
 				else if(strcmp(thisOpt->key,"queuelen") == 0)
@@ -257,7 +260,8 @@ int nw_load_conf(char *path)
 					if(get_unsigned32(&o.queuelen,thisVal->string,10))
 					{
 						fprintf(stderr,"Invalid queuelen val.\n");
-						goto Failed;
+						ret = -1;
+						goto RETURN;
 					}
 				}
 				else if(strcmp(thisOpt->key,"idletimeout")==0)
@@ -266,7 +270,8 @@ int nw_load_conf(char *path)
 					if(get_unsigned32(&o.idletimeout,thisVal->string,10))
 					{
 						fprintf(stderr,"Invalid idletimeout value.\n");
-						goto Failed;
+						ret = -1;
+						goto RETURN;
 					}
 				}
 				else if(strcmp(thisOpt->key,"batch") == 0)
@@ -275,7 +280,8 @@ int nw_load_conf(char *path)
 					if(get_unsigned32(&o.batch,thisVal->string,10))
 					{
 						fprintf(stderr,"Invalid batch value.\n");
-						goto Failed;
+						ret = -1;
+						goto RETURN;
 					}
 				}
 				else if(strcmp(thisOpt->key,"swtichtimeout")==0)
@@ -284,7 +290,8 @@ int nw_load_conf(char *path)
 					if(get_unsigned32(&o.switchtime,thisVal->string,10))
 					{
 						fprintf(stderr,"Invalid switchtime value\n");
-						goto Failed;
+						ret = -1;
+						goto RETURN;
 					}
 				}
 				else if(strcmp(thisOpt->key,"interval")==0)
@@ -318,7 +325,8 @@ int nw_load_conf(char *path)
 					}else 
 					{
 						on_off("multipath",thisVal->string);
-						goto Failed;
+						ret = -1;
+						goto RETURN;
 					}
 				}
 				thisVal = thisVal->next;
@@ -331,21 +339,21 @@ int nw_load_conf(char *path)
 			if(ret)
 			{
 				fprintf(stderr,"setup %s failed\n",dev);
-				goto Failed;
+				goto RETURN;
 			}
 			fprintf(stdout,"\ndevice %s setup success\n",dev);
 		}
 		if(o.batch||o.bufflen||o.idletimeout||o.switchtime||o.budget||o.queuelen||strlen(o.oneclient)||strlen(o.showlog))
 		{
-			if(nw_other_set(dev,&o))
-				goto Failed;
+			if((ret = nw_other_set(dev,&o)))
+				goto RETURN;
 		}
 		if(p.interval&&p.timeout)
 		{	
 			if(p.interval < p.timeout)
 			{	
-				if(nw_ping_set(dev,&p))
-					goto Failed;
+				if((ret = nw_ping_set(dev,&p)))
+					goto RETURN;
 			}
 			else
 			{
@@ -354,35 +362,35 @@ int nw_load_conf(char *path)
 		}
 		if(b.port)
 		{
-			if(nw_bind_set(dev,&b))
-				goto Failed;
+			if((ret =nw_bind_set(dev,&b)))
+				goto RETURN;
 		}
 		if(strlen(s.peerid))
 		{
-			if(nw_self_set(dev,&s))
-				goto Failed;
+			if((ret =nw_self_set(dev,&s)))
+				goto RETURN;
 		}
 		if(t.mode)
 		{
-			if(nw_type_set(dev,&t))
-				goto Failed;
+			if((ret =nw_type_set(dev,&t)))
+				goto RETURN;
 		}
 		if(strlen(log)>0)
 		{
 			strcpy(o.showlog,log);
-			if(nw_other_set(dev,&o))
-				goto Failed;
+			if((ret =nw_other_set(dev,&o)))
+				goto RETURN;
 		}
 		if(peerIndex)
 		{
 			entry->count = peerIndex;
 			printf("entry->count:%u\n",entry->count);
-			if(nw_do_add(dev,entry))
-				goto Failed;
+			if((ret = nw_do_add(dev,entry)))
+				goto RETURN;
 		}
-		if(nw_mptcp_set(dev,set_mptcp))
-				goto Failed;
-		free(entry);
+		if((ret = nw_mptcp_set(dev,set_mptcp)))
+				goto RETURN;
+		memset(entry,0,sizeof(struct nw_peer_entry));
 		memset(&o,0,sizeof(struct nw_other));
 		memset(&s,0,sizeof(struct nw_self));
 		memset(&b,0,sizeof(struct nw_bind));
@@ -392,15 +400,11 @@ int nw_load_conf(char *path)
 		printf("\n");
 		thisConf = thisConf->next;
 	}
-	goto Success;
-Success:
+	goto RETURN;
+RETURN:
+	free(entry);
 	file_close(&file);
-	return 0;
-Failed:
-	if(peerIndex)
-		free(entry);
-	file_close(&file);
-	return -1;
+	return ret;
 }
 static int nw_overwrite(char *argv)
 {
@@ -510,65 +514,67 @@ static int nw_save_dev(FILE *fp,const char *dev)
 		perror("dev is required\n");
 		goto RETURN;
 	}
-
 	char ip[16];
 	char mask[16];
 	//char *cmd = NULL;
-	struct nw_other o;
-	struct nw_bind b;
-	struct nw_self s;
-	struct nw_ping p;
-	struct nw_type t;
-	struct nw_peer_entry *npe = NULL;
-	if(nw_other_read(dev,&o))
+	struct nw_other *o = calloc(1,sizeof(struct nw_other));
+	struct nw_bind  *b = calloc(1,sizeof(struct nw_bind));
+	struct nw_self  *s = calloc(1,sizeof(struct nw_self));
+	struct nw_ping  *p = calloc(1,sizeof(struct nw_ping));
+	struct nw_type  *t = calloc(1,sizeof(struct nw_type));
+	struct nw_peer_entry *npe = calloc(1,sizeof(struct nw_peer_entry));
+	if((ret = nw_other_read(dev,o)))
 	{
-		ret =-1;
 		perror("other info read failure.\n");
 		goto RETURN;
 	}
-	if(nw_ping_read(dev,&p))
+	if((ret = nw_ping_read(dev,p)))
 	{
-		ret = -1;
 		perror("ping info read failure.\n");
 		goto RETURN;
 	}
-	if(nw_type_read(dev,&t))
+	if((ret = nw_type_read(dev,t)))
 	{
-		ret = -1;
 		perror("type info read failure.\n");
 		goto RETURN;
 	}
-	//malloc
-	npe = calloc(1,sizeof(struct nw_peer_entry));
+	if((ret = nw_bind_read(dev,b)))
+	{
+		perror("bind info read failure.\n");
+		goto RETURN;
+	}
 	if(npe == NULL)
 	{
-		ret = -1;
 		perror("Malloc error.\n");
 		goto RETURN;
 	}
-	if(nw_do_peer_list(dev,npe))
+	if((ret = nw_do_peer_list(dev,npe)))
 	{
-		ret = -1;
 		perror("List info read error.\n");
 		goto RETURN;
 	}
-	if(nw_self_read(dev,&s))
+	if((ret = nw_self_read(dev,s)))
 	{
-		ret =-1;
 		goto RETURN;
 	}
-	printf("NW info allocating.\n");
+	//printf("NW info allocating.\n");
 	//write
-	if(get_ip_mask(dev,ip,mask))
+	if((ret = get_ip_mask(dev,ip,mask)))
 	{
 		perror("Failed to get dev ip and mask.\n");
 	}
-	printf("%s %s %s\n",dev,ip,mask);
-	nw_dev_conf_export(fp,dev,ip,mask,&o,&b,&p,&t,&s,&npe);
+//	printf("%s %s %s %d\n",dev,ip,mask,b->port);
+	nw_dev_conf_export(fp,dev,ip,mask,o,b,p,t,s,&npe);
+//	nw_mptcp_export(fp,dev,);
+	ret = 0;
 	goto RETURN;
 RETURN:
-	if(npe != NULL)
-		free(npe);
+	free(npe);
+	free(o);
+	free(s);
+	free(b);
+	free(p);
+	free(t);
 	return ret;
 }
 static int nw_remove(const char *dev)
@@ -576,7 +582,7 @@ static int nw_remove(const char *dev)
 	int ret ;
 	assert(dev != NULL);
 	char rm_cmd[50];
-	sprintf(rm_cmd,"ip link del dev %s",dev);
+	sprintf(rm_cmd,"sudo ip link del dev %s",dev);
 	ret = system(rm_cmd);
 	if(ret)
 		return -1;
@@ -589,7 +595,7 @@ static void nw_clear()
 	FILE *fp = NULL;
 	char buf[256];
 	memset(buf,0,256);
-	sprintf(show_cmd,"ip link show type ngmwan");
+	sprintf(show_cmd,"sudo ip link show type ngmwan");
 	char *i,
 		 *d;
 	if((fp = popen(show_cmd,"r")) == NULL)
@@ -869,8 +875,8 @@ void file_close(struct nw_file **file)
 }
 static void nw_dev_conf_export(FILE *fp,
                             const char *dev,
-							const char * dev_ip,
-							const char * mask,
+							const char *dev_ip,
+							const char *mask,
                             struct nw_other *o_ptr, 
                             struct nw_bind *b_ptr,
                             struct nw_ping *p_ptr,
@@ -880,6 +886,9 @@ static void nw_dev_conf_export(FILE *fp,
 {
 	int i ;
 	char ip_v4[16];
+	char ip_mask[16];
+	strcpy(ip_v4,dev_ip);
+	strcpy(ip_mask,mask);
 	assert(s_ptr != NULL);
 	assert(npe != NULL);
 	assert(dev!=NULL);
@@ -888,16 +897,17 @@ static void nw_dev_conf_export(FILE *fp,
 	fprintf(fp,"config interface \'%s\'\n",dev);
 	fprintf(fp,"\toption ifname \'%s\'\n",dev);
 	fprintf(fp,"\toption proto \'static\'\n");
-	fprintf(fp,"\toption ipaddr \'%s\'\n",dev_ip);
-	fprintf(fp,"\toption netmask \'%s\'\n",mask);
+	fprintf(fp,"\toption ipaddr \'%s\'\n",ip_v4);
+	fprintf(fp,"\toption netmask \'%s\'\n",ip_mask);
 	fprintf(fp,"\toption bufflen \'%u\'\n",o_ptr->bufflen);
 	fprintf(fp,"\toption budget \'%u\'\n",o_ptr->budget);
 	fprintf(fp,"\toption idletimeout \'%u\'\n",o_ptr->idletimeout);
 	fprintf(fp,"\toption oneclient \'%s\'\n",o_ptr->oneclient);
 	fprintf(fp,"\toption queuelen \'%u\'\n",o_ptr->queuelen);
-	fprintf(fp,"\toption showlog \'%s\'\n",o_ptr->showlog);
+	fprintf(fp,"\toption log \'%s\'\n",o_ptr->showlog);
+	fprintf(fp,"\toption batch \'%u\'\n",o_ptr->batch);
 	fprintf(fp,"\toption switchtime \'%u\'\n",o_ptr->switchtime);
-	fprintf(fp,"\toption bindport \'%u\'\n",b_ptr->port);
+	fprintf(fp,"\toption bindport \'%d\'\n",b_ptr->port);
 	fprintf(fp,"\toption interval \'%u\'\n",p_ptr->interval);
 	fprintf(fp,"\toption timeout \'%u\'\n",p_ptr->timeout);
 	fprintf(fp,"\toption ownid \'%s\'\n",s_ptr->peerid);
@@ -908,7 +918,8 @@ static void nw_dev_conf_export(FILE *fp,
 		{
 			perror("inet_ntop error.\n");
 		}
-		fprintf(fp,"\toption option peer \'%s,%s,%d\'\n",(*npe)->peerid[i],ip_v4,(*npe)->port[i]);
-	}	
+		fprintf(fp,"\toption peer \'%s,%s,%d\'\n",(*npe)->peerid[i],ip_v4,(*npe)->port[i]);
+	}
+	fprintf(fp,"\n");
 	return;
 }

@@ -15,7 +15,7 @@
 /*common*/
 void nw_dev_show_statistic(char  *);
 void nw_dev_show_args(char *);
-int nw_mptcp_set(char *dev ,bool yes_no);
+int  nw_mptcp_set(char *dev ,bool yes_no);
 /*ioctl*/
 /**
  * a interface between kernel and userspace to control our nw device.

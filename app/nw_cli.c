@@ -158,7 +158,6 @@ int main(int argc,char *argv[])
 {
 	char *path = DEFAULT_CONF_FILE;
 	char *save_path = DEFAULT_SAVE_FILE;	
-//	char *dev = NULL;
 	if(argc < 2 ) 
 	{
 		nw_usage();
@@ -702,10 +701,20 @@ int nw_dev_set(int argc, char **argv)
 	printf("Success!\n");
 	return 0 ;
 }
-
+int nw_mptcp_read(char *dev)
+{
+	char mptcp_cmd[50];
+	sprintf(mptcp_cmd,"sudo ip link show %s|grep -o NOMULTIPATH ",dev);
+	if(system(mptcp_cmd))
+	{
+		fprintf(stderr,"multipath exec err.\n");
+		return -1;
+	}
+	return 0;
+}
 int nw_mptcp_set(char *dev ,bool on_off)
 {
-	char mptcp_cmd[40];
+	char mptcp_cmd[50];
 	sprintf(mptcp_cmd,"sudo ip link set %s multipath %s",dev,on_off?"on":"off");
 	if( system(mptcp_cmd))
 	{
@@ -832,7 +841,7 @@ static void other_print(struct nw_other *other,bool is_other[],size_t size)
 	if(is_other[1])
 		fprintf(stdout,"budget 		\t%-10d    \n",other->budget);
 	if(is_other[2])
-		fprintf(stdout,"queuelen   \t%-10d   \n",other->queuelen);
+		fprintf(stdout,"queuelen   \t%-10d     \n",  other->queuelen);
 	if(is_other[3])
 		fprintf(stdout,"oneclient  \t%-10s    \n",strcmp(other->oneclient,"yes")==0?"yes":"no");
 	if(is_other[4])
