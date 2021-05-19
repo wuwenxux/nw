@@ -211,7 +211,8 @@ int check_opt_peer(const char *dev, char *value,char *peerid,u32 *nl_ip, u16 *v_
 		fprintf(stderr,"Option with dev %s is not valid.\n",dev);
 		goto Failed;
 	}
-	if(check_ipv4(ip))
+	//convert ip to u32 form
+	if(check_ipv4(ip)||inet_pton(AF_INET,ip,nl_ip)<1)
 	{
 		fprintf(stderr,"Option with ip %s is not valid.\n",ip);
 		goto Failed;
@@ -221,6 +222,8 @@ int check_opt_peer(const char *dev, char *value,char *peerid,u32 *nl_ip, u16 *v_
 		fprintf(stderr,"%s not valid.\n",port);
 		goto Failed;
 	}
+	strcpy(peerid,id);
+	//printf("%s %u %u ",peerid,*nl_ip,*v_port);
 	goto Success;
 Failed:
 	return -1;

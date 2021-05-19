@@ -435,7 +435,7 @@ int nw_dev_show(int argc, char **argv)
 		ret = nw_type_read(dev,&type);
 		do_read(&type.head);
 	}
-	if(r_ping[0]||r_ping[1])
+	if(r_ping[0] || r_ping[1])
 	{
 		ret = nw_ping_read(dev,&ping);
 		ping_print(&ping,r_ping);
@@ -512,7 +512,7 @@ int nw_dev_set(int argc, char **argv)
 		}else if(matches(*argv,"budget") == 0 || matches(*argv,"maxblen") == 0)//other.budget
 		{
 			NEXT_ARG();
-			if(get_unsigned32(&other.budget,*argv,0) )
+			if(get_unsigned32(&other.budget,*argv,0))
 			{
 				invarg("invalid \"budget\" value\n",*argv);
 				return -1;
@@ -619,9 +619,10 @@ int nw_dev_set(int argc, char **argv)
 			NEXT_ARG();
 			if(get_unsigned32(&other.switchtime,*argv,0))
 			{
-				invarg("invalid \"switchtime \" value",*argv);
+				invarg("invalid \"switchtime \" value\n",*argv);
 				return -1;
-			}	
+			}
+		//	printf("\nswitchtime %u",other.switchtime);
 		}else if (matches(*argv,"multipath") == 0)
 		{
 			if( NEXT_ARG_OK())
@@ -668,8 +669,9 @@ int nw_dev_set(int argc, char **argv)
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
 		exit(-1);
 	}
-	if(other.batch || other.idletimeout ||other.bufflen||other.budget||other.queuelen||strlen(other.showlog)!= 0||strlen(other.oneclient) != 0 )
+	if(other.batch || other.idletimeout ||other.bufflen||other.budget||other.queuelen||strlen(other.showlog)!= 0||strlen(other.oneclient) != 0 ||other.switchtime)
 	{
+		//printf("\n%u %u %u %u %u %s %s %u \n",other.batch, other.idletimeout,other.bufflen,other.budget,other.queuelen,other.showlog,other.oneclient,other.switchtime);
 		if(nw_other_set(dev,&other) < 0)
 			return -1;
 	}
@@ -683,10 +685,18 @@ int nw_dev_set(int argc, char **argv)
 		if(nw_type_set(dev,&mo) < 0) 
 			return -1;
 	}
-	if(ping.interval < ping.timeout)
+	if(ping.interval&&ping.timeout)
 	{
-		if(nw_ping_set(dev,&ping) < 0)
+		if(ping.interval < ping.timeout)
+		{
+			if(nw_ping_set(dev,&ping) < 0)
+				return -1;
+		}
+		else
+		{
+			fprintf(stderr,"interval should be smaller than timeout.\n");
 			return -1;
+		}
 	}
 	if(strlen(self.peerid))
 	{
@@ -824,7 +834,6 @@ int check_self(const char *id)
 	}
 	return 0;
 }
-
 static bool is_other(bool other[],size_t size)
 {
 	int i;

@@ -116,6 +116,11 @@ struct nw_file *file_open(char *path)
 		    val = strtok(NULL," ");
 		   	assert(key != NULL);
 			assert(val != NULL);
+			if(key == NULL || val == NULL)
+			{
+				fprintf(stderr,"option key val is expected.\n");
+				goto EXIT;
+			}
 			trim(val,trim_str);
 		 	add_option(thisConfig,key,val);
 		}
@@ -198,7 +203,7 @@ int nw_load_conf(char *path)
 				{
 					if(get_unsigned16(&b.port,thisVal->string,10))
 					{	
-						fprintf(stderr,"Not a valid unsigned short value\n");
+						fprintf(stderr,"%s not a valid unsigned short value\n",thisVal->string);
 					}
 				}else if(strcmp(thisOpt->key,"log") == 0)
 				{
@@ -213,19 +218,21 @@ int nw_load_conf(char *path)
 				{
 					if(check_opt_peer(dev,thisVal->string,peer_id,&peer_ip,&peer_port))
 					{
+						fprintf(stderr,"Invalid option string %s\n",thisVal->string);
 						ret = -1;
 						goto RETURN;
 					}
 					strcpy(entry->peerid[peerIndex],peer_id);
 					entry->ip[peerIndex] = peer_ip;
 					entry->port[peerIndex] = peer_port;
+					//printf("%s %u %u",entry->peerid[peerIndex],entry->ip[peerIndex],entry->port[peerIndex]);
 					peerIndex++;
 				}else if(strcmp(thisOpt->key,"bufflen") == 0)
 				{
 					assert(thisVal->string != NULL);
 					if(get_unsigned32(&o.bufflen,thisVal->string,10))
 					{	
-						fprintf(stderr,"Not a valid unsigned short value\n.");
+						fprintf(stderr,"Not a valid nw bufflen value\n.");
 						ret = -1;
 						goto RETURN;
 					}
@@ -235,7 +242,7 @@ int nw_load_conf(char *path)
 					assert(thisVal->string != NULL);
 					if(get_unsigned32(&o.budget,thisVal->string,10))
 					{	
-						fprintf(stderr,"Not a valid unsigned int value\n");
+						fprintf(stderr,"Not a valid nw budget value\n");
 						ret = -1;
 						goto RETURN;
 					}
@@ -332,16 +339,24 @@ int nw_load_conf(char *path)
 			}
 			thisOpt = thisOpt->next;
 		}
-		if(!check_ifname(dev)&& !check_ipv4(ipaddr) && !check_netmask(netmask))
+		if(check_ifname(dev))
 	   	{
-			ret = nw_setup_dev(dev,ipaddr,netmask);
-			if(ret)
-			{
-				fprintf(stderr,"setup %s failed\n",dev);
-				goto RETURN;
-			}
-			fprintf(stdout,"\ndevice %s setup success\n",dev);
+			ret = -1;
+			fprintf(stderr,"%s is invalid.\n",dev);
+			goto RETURN;
 		}
+		if(check_ipv4(ipaddr) || check_netmask(netmask))
+		{
+			ret = -1;
+			fprintf(stderr,"dev %s: %s or %s is invalid.\n",dev,ipaddr,netmask);
+			goto RETURN;
+		}
+		if((ret = nw_setup_dev(dev,ipaddr,netmask)))
+		{
+			fprintf(stderr,"setup %s failed\n",dev);
+			goto RETURN;
+		}
+		fprintf(stdout,"Device %s setup success.\n",dev);
 		if(o.batch||o.bufflen||o.idletimeout||o.switchtime||o.budget||o.queuelen||strlen(o.oneclient)||strlen(o.showlog))
 		{
 			if((ret = nw_other_set(dev,&o)))
@@ -353,25 +368,24 @@ int nw_load_conf(char *path)
 			{	
 				if((ret = nw_ping_set(dev,&p)))
 					goto RETURN;
-			}
-			else
+			}else
 			{
-				fprintf(stderr,"Interval comes earlier than timeout.\n");
+				fprintf(stderr,"Interval shoule be smaller than timeout.\n");
 			}
 		}
 		if(b.port)
 		{
-			if((ret =nw_bind_set(dev,&b)))
+			if((ret = nw_bind_set(dev,&b)))
 				goto RETURN;
 		}
 		if(strlen(s.peerid))
 		{
-			if((ret =nw_self_set(dev,&s)))
+			if((ret = nw_self_set(dev,&s)))
 				goto RETURN;
 		}
 		if(t.mode)
 		{
-			if((ret =nw_type_set(dev,&t)))
+			if((ret = nw_type_set(dev,&t)))
 				goto RETURN;
 		}
 		if(strlen(log)>0)
@@ -383,7 +397,7 @@ int nw_load_conf(char *path)
 		if(peerIndex)
 		{
 			entry->count = peerIndex;
-			printf("entry->count:%u\n",entry->count);
+			//printf("entry->count:%u\n",entry->count);
 			if((ret = nw_do_add(dev,entry)))
 				goto RETURN;
 		}
@@ -484,12 +498,13 @@ int nw_save_conf(char *path)
 				goto RETURN;
 			}
 			trim(dev,trim_str);
-			printf("%s\n",dev);
 			if(nw_save_dev(save_fp,dev))
 			{
 				ret = -1;
+				fprintf(stderr,"Conf %s save failed.\n",dev);
 				goto RETURN;
 			}
+			printf("Config %s save success.\n",dev);
 		}
 	}
 	goto RETURN;
@@ -529,12 +544,12 @@ static int nw_save_dev(FILE *fp,const char *dev)
 	}
 	if((ret = nw_ping_read(dev,p)))
 	{
-		perror("ping info read failure.\n");
+		perror("Nw ping info read failure.\n");
 		goto RETURN;
 	}
 	if((ret = nw_type_read(dev,t)))
 	{
-		perror("type info read failure.\n");
+		perror("Nw type info read failure.\n");
 		goto RETURN;
 	}
 	if((ret = nw_bind_read(dev,b)))
@@ -557,7 +572,6 @@ static int nw_save_dev(FILE *fp,const char *dev)
 		perror("Nw self info read error.\n");
 		goto RETURN;
 	}
-	//printf("NW info allocating.\n");
 	//write
 	if((ret = get_ip_mask(dev,ip,mask)))
 	{
@@ -636,7 +650,6 @@ int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 	char ip_cmd[128];
 	char ip_v4[16];
 	char mask_str[16];
-	//char if_cmd[128];
 
 	assert(dev != NULL);
 	if(check_nw_if(dev) == 0)

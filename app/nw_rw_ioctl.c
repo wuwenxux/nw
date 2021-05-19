@@ -231,11 +231,11 @@ void do_read(struct nw_oper_head *head)
 		struct nw_peer_entry *entry = (struct nw_peer_entry *) head;
 		char ipv4[16];
 		int i;
-		fprintf(stdout,"No.   id\tpeerip\t\tpeerport\n");
+		fprintf(stdout,"No. id                peerip          port\n");
 		for(i = 0 ; i < entry->count ; i++)
 		{
 			inet_ntop(AF_INET,&entry->ip[i],ipv4,16);
-			fprintf(stdout,"%-5d %-10s%-16s%-10u\n",i+1,entry->peerid[i],ipv4,entry->port[i]);
+			fprintf(stdout,"%-4d%-13s%17s%6u\n",i+1,entry->peerid[i],ipv4,entry->port[i]);
 		}
 	}else if(head->type == NW_OPER_BIND)
 	{
@@ -254,11 +254,10 @@ void do_read(struct nw_oper_head *head)
 	{
 		char *dev = NULL;
 		int ret ;
-//		struct nw_dev_stat *stat = (struct nw_dev_stat*)head;
 		ret = nw_search_if(dev);
 		if(ret)
 			fprintf(stderr,"dev not found.");
-//		nw_stat_dev(dev);
+
 	}
 	else if(head->type == NW_OPER_OTHER )
 	{

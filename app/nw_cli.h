@@ -5,9 +5,9 @@
 #define NW_MODE_SERVER  2
 #define NW_MODE_CLIENT  1
 #define NGMWAN_GENL_VERSION_NAME "1.0.0.1"
-#define PUT_BAR_T(str)	printf("*****************************************\n"); \
-			            printf("*  ngmwan interface: %s                *\n", str);\
-			            printf("*****************************************\n");
+#define PUT_BAR_T(str)	printf("******************************************\n"); \
+			            printf("*  ngmwan interface: %s                 *\n", str);\
+			            printf("******************************************\n");
 #define DEFAULT_CONF_FILE  "./ngmwan"
 #define DEFAULT_SAVE_FILE  "./save_ngmwan"
 #define CONF_NAME_SIZE 20

@@ -6,8 +6,8 @@
 #include <ctype.h>
 #include <sys/queue.h>
 
-//structures
 /**
+ * Structures
  * Struct of a conf file(name, configs) 
  * @name:basename of this config file
  * @configs:a conf file has a list of configs
@@ -36,7 +36,6 @@ struct nw_config
  * @value:values of the key to be stored
  * @next:one link of a option list 
  **/
-
 struct nw_option
 {
     char *key;
@@ -44,18 +43,16 @@ struct nw_option
     struct nw_option *next;
 };
 /**
- * A value list of nw option.
- * option key : value, value ,values...
+ *A value list of nw option.
+ *option key : value, value ,values...
  **/
 struct nw_value{
     char *string;
     struct nw_value *next;
 };
-
-
 /**
  * Parse the given file and load it into the conf structures.
- *  Return: a struct nw_file object if success else return NULL.
+ * Return: a struct nw_file object if success else return NULL.
  * @path:file path
  **/
 struct nw_file *file_open(char *path);
@@ -74,7 +71,6 @@ struct nw_config *find_config(struct nw_file *file,const char *name);
 struct nw_option *find_option(struct nw_config *name,const char *key);
 int find_value(struct nw_option *opt, const char *val);
 
-//struct nw_list *find_list(struct nw_config *name,const char *name);
 /**
  * Load config to set up a dev 
  * Note:ifname of this config is not valid return -1.
@@ -85,41 +81,21 @@ int find_value(struct nw_option *opt, const char *val);
  **/
 int nw_setup_dev(const char *dev, char *ip,char *mask);
 /**
- * Load config and configure nw_other info.
- * Return:0 Success ,DEV_NOT_FOUND,IOCTLERR,CHECKERR Failed.
- * @config: a ptr of listhead which points to nw_config.
- *int nw_setup_other(struct nw_other *o_ptr); 
- **/
-/**
- * Load config and configure nw_peer_entry info.
- * Return: 0 Success , CMDERR,DEV_NOT_FOUND ,MEMERR Failed.
- * @config:a ptr of listhead which points to nw_config.
- *
- *int nw_setup_peer(struct nw_peer_entry *e_ptr);
- */
-/*util*/
-/**
- * Convert  from a u32 value to a client/server str.
- * Return: client/server  if not exist NULL.
- * @mode:1 client 2 server 
- **/
-
-/**
- * Find the value of a option with key
- * Return : value of this option
- * @name:name of the conf
- * @key:key of the option
- **/
-//char* find_value(struct nw_config *name,const char *key);
-/**
  * Close a file
  * Free all allocated structures : options,configs
  * file supposed to be valid ,if not return.
  * @file:the nw_file object to close
  **/
 void file_close(struct nw_file **file);
-/*remove all nw dev */
+/**
+ * Remove all nw dev
+ **/
 static void nw_clear();
-/*save one nw dev conf*/
+/**
+ * Save one nw dev interface
+ * Return:0 success , -1 failure
+ *@fp:export one dev conf interface to fp
+ *@dev:conf of dev
+ **/
 static int nw_save_dev(FILE *fp,const char *dev);
 #endif
