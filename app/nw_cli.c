@@ -26,7 +26,7 @@ void nw_ver(void)
 /*nw usage*/
 void nw_peer_usage(void)
 {
-	fprintf(stderr,"Usage: ...peerid PEERID peerip PEERIP peerport PEERPORT\n"
+	fprintf(stderr, "Usage: ...peerid PEERID peerip PEERIP peerport PEERPORT\n"
 					"PEERID: p1 - p255\n"
 					"PEERIP: valid ip addr\n"
 					"PEERPORT: 1- 65535\n");
@@ -104,7 +104,7 @@ void  nw_usage(void)
 			"	nw ver\n"
 			"	nw stat 	[ DEVICE | dev DEVICE ]\n"
 			"	nw connect	[ DEVICE | dev DEVICE ]\n"
-			"	nw close	[ DEVICE | dev DEVICE ] [ peer PEERID| PEERID ]\n");
+			"	nw close	[ DEVICE | dev DEVICE ] [ peer PEERID | PEERID ]\n");
 	exit(-1);
 }
 const char *other_str[] =
@@ -156,8 +156,8 @@ const char *dev_stat_str[]=
 };
 int main(int argc,char *argv[])
 {
-	char *path = DEFAULT_CONF_FILE;
-	char *save_path = DEFAULT_SAVE_FILE;	
+	char *path = NULL;
+	char *save_path = NULL;	
 	if(argc < 2 ) 
 	{
 		nw_usage();
@@ -199,7 +199,6 @@ int main(int argc,char *argv[])
 			if(NEXT_ARG_OK())
 			{
 				NEXT_ARG();
-				if(check_filepath(*argv))
 				save_path = *argv;
 			}else
 			{
@@ -411,14 +410,14 @@ int nw_dev_show(int argc, char **argv)
 	PUT_BAR_T(dev);
 	if(show_all&& dev_found)
 	{
+		ret = nw_type_read(dev,&type);
+		do_read(&type.head);
 		ret = nw_other_read(dev,&other);
 		do_read(&other.head);
 		ret = nw_bind_read(dev,&bind);
 		do_read(&bind.head);
 		ret = nw_ping_read(dev,&ping);
 		do_read(&ping.head);
-		ret = nw_type_read(dev,&type);
-		do_read(&type.head);
 		ret = nw_self_read(dev,&self);
 		do_read(&self.head);
 		ret = nw_mptcp(dev);
@@ -456,7 +455,7 @@ int nw_dev_show(int argc, char **argv)
 		fprintf(stdout,"No.\tid\tpeerip\t\tpeerport\n");
 		for( i = 0,cur = strtok(peers,","); cur != NULL; cur = strtok(NULL,","), i++)
 		{
-				peer_print(entry,cur);
+			peer_print(entry,cur);
 		}
 	}
 	if(r_self)
@@ -484,6 +483,7 @@ int nw_dev_set(int argc, char **argv)
 	struct nw_type mo;
 	struct nw_ping ping;
 	struct nw_self self;
+	bool set_ping[2] = {false};
 	bool set_mptcp = false;
 	char *dev = NULL;
 	bool mptcp= false;
@@ -538,7 +538,7 @@ int nw_dev_set(int argc, char **argv)
 			{
 				return yes_no("oneclient",*argv);
 			}	
-		}else if (matches(*argv,"log") == 0) //other.showlog
+		}else if(matches(*argv,"log") == 0) //other.showlog
 		{
 			NEXT_ARG();
 			if(strcmp(*argv,"yes") == 0)
@@ -597,14 +597,17 @@ int nw_dev_set(int argc, char **argv)
 				invarg("invalid \"interval \" value\n",*argv);
 				return -1;
 			}
-		}else if(matches(*argv,"timeout") == 0)//ping.timeout
+			set_ping[0] = true;
+		}
+		else if(matches(*argv,"timeout") == 0)//ping.timeout
 		{
 			NEXT_ARG();
 			if(get_unsigned32(&ping.timeout,*argv,0))
 			{
-				invarg("invalid \"timeout \" value\n",*argv);
+				invarg("Invalid \"timeout \" value\n",*argv);
 				return -1;
 			}
+			set_ping[1] = true;
 		}else if(matches(*argv,"ownid") == 0)//nw_self
 		{
 			NEXT_ARG();
@@ -638,7 +641,7 @@ int nw_dev_set(int argc, char **argv)
 			}else
 			{
 				fprintf(stderr,"multipath value \"on\" or \"off\" is expected.\n");
-				exit(EXIT_FAILURE);
+				return -1;
 			}
 		}else{//head.devname
 			if(strcmp(*argv,"dev") == 0 )
@@ -647,7 +650,7 @@ int nw_dev_set(int argc, char **argv)
 				nw_set_usage();
 			if(dev)
 			{
-			 	duparg2("dev",*argv);
+			 	duparg2(dev,*argv);
 				return -1;
 			}
 			if(check_ifname(*argv))
@@ -671,11 +674,10 @@ int nw_dev_set(int argc, char **argv)
 	}
 	if(other.batch || other.idletimeout ||other.bufflen||other.budget||other.queuelen||strlen(other.showlog)!= 0||strlen(other.oneclient) != 0 ||other.switchtime)
 	{
-		//printf("\n%u %u %u %u %u %s %s %u \n",other.batch, other.idletimeout,other.bufflen,other.budget,other.queuelen,other.showlog,other.oneclient,other.switchtime);
 		if(nw_other_set(dev,&other) < 0)
 			return -1;
 	}
-	 if(bind.port > 0)
+	if(bind.port > 0)
 	{
 		if(nw_bind_set(dev,&bind) < 0 ) 
 			return -1;
@@ -685,7 +687,7 @@ int nw_dev_set(int argc, char **argv)
 		if(nw_type_set(dev,&mo) < 0) 
 			return -1;
 	}
-	if(ping.interval&&ping.timeout)
+	if(set_ping[0]&&set_ping[1])
 	{
 		if(ping.interval < ping.timeout)
 		{
@@ -697,6 +699,13 @@ int nw_dev_set(int argc, char **argv)
 			fprintf(stderr,"interval should be smaller than timeout.\n");
 			return -1;
 		}
+	}else if(set_ping[0] == false && set_ping[1] == false)
+	{
+		//do nothing
+	}
+	else{
+		fprintf(stderr,"Both interval and timeout should be set.\n");
+		return -1;
 	}
 	if(strlen(self.peerid))
 	{
@@ -714,7 +723,7 @@ int nw_dev_set(int argc, char **argv)
 int nw_mptcp_read(char *dev)
 {
 	char mptcp_cmd[50];
-	sprintf(mptcp_cmd,"sudo ip link show %s|grep -o NOMULTIPATH ",dev);
+	sprintf(mptcp_cmd,"ip link show %s|grep -o NOMULTIPATH ",dev);
 	if(system(mptcp_cmd))
 	{
 		return -1;
@@ -724,8 +733,8 @@ int nw_mptcp_read(char *dev)
 int nw_mptcp_set(char *dev ,bool on_off)
 {
 	char mptcp_cmd[50];
-	sprintf(mptcp_cmd,"sudo ip link set %s multipath %s",dev,on_off?"on":"off");
-	if( system(mptcp_cmd))
+	sprintf(mptcp_cmd,"ip link set %s multipath %s",dev,on_off?"on":"off");
+	if(system(mptcp_cmd))
 	{
 		fprintf(stderr,"multipath exec err.");
 		return -1;
@@ -845,21 +854,21 @@ static bool is_other(bool other[],size_t size)
 static void other_print(struct nw_other *other,bool is_other[],size_t size)
 {
 	if(is_other[0])
-		fprintf(stdout,"bufflen    \t%-10dK    \n",other->bufflen);
+		fprintf(stdout,"bufflen     \t%dK   \n",other->bufflen);
 	if(is_other[1])
-		fprintf(stdout,"budget 		\t%-10d    \n",other->budget);
+		fprintf(stdout,"budget 		\t%d    \n",other->budget);
 	if(is_other[2])
-		fprintf(stdout,"queuelen   \t%-10d     \n",  other->queuelen);
+		fprintf(stdout,"queuelen    \t%d    \n",  other->queuelen);
 	if(is_other[3])
-		fprintf(stdout,"oneclient  \t%-10s    \n",strcmp(other->oneclient,"yes")==0?"yes":"no");
+		fprintf(stdout,"oneclient   \t%s    \n",strcmp(other->oneclient,"yes")==0?"yes":"no");
 	if(is_other[4])
-		fprintf(stdout,"log    	   \t%-10s    \n",strcmp(other->showlog,"yes")==0?"yes":"no");
+		fprintf(stdout,"log    	    \t%s    \n",strcmp(other->showlog,"yes")==0?"yes":"no");
 	if(is_other[5])
-		fprintf(stdout,"batch      \t%-10d    \n",other->batch?other->batch:0);
+		fprintf(stdout,"batch       \t%d    \n",other->batch?other->batch:0);
 	if(is_other[6])
-		fprintf(stdout,"idletimeout\t%-10ds    \n",other->idletimeout);
+		fprintf(stdout,"idletimeout \t%ds   \n",other->idletimeout);
 	if(is_other[7])
-		fprintf(stdout,"switchtime \t%-10ds    \n",other->switchtime);
+		fprintf(stdout,"switchtime  \t%ds   \n",other->switchtime);
 }
 static void ping_print(struct nw_ping *ping,bool is_ping[])
 {
@@ -879,9 +888,8 @@ static void peer_print(struct nw_peer_entry *entry,char *id)
 			if(strcmp(entry->peerid[i],id) == 0)
 			{
 					inet_ntop(AF_INET,&entry->ip[i],ipv4,16);
-					fprintf(stdout," %-5d\t%-5s\t%-16s%-10u\n",i,entry->peerid[i],ipv4,entry->port[i]);
+					fprintf(stdout," %-5d\t%-5s\t%-16s%-10u\n",i+1,entry->peerid[i],ipv4,entry->port[i]);
 			}
-			
 		}
 	}
 }

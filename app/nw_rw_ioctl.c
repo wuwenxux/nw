@@ -220,23 +220,35 @@ int nw_search_if( char *dev)
 		}
 	}
 	pclose(fp);
-	
 	/* net device is not exist  */
 	return -1;
 }
 void do_read(struct nw_oper_head *head)
 {	
+	struct nw_peer_entry *entry = (struct nw_peer_entry *) head;
+	char ipv4[16];
+	//int max=0;
+	int i;
+	int maxid = 0;
 	if(head->type == NW_OPER_PEER)
 	{
-		struct nw_peer_entry *entry = (struct nw_peer_entry *) head;
-		char ipv4[16];
-		int i;
-		fprintf(stdout,"No. id                peerip          port\n");
 		for(i = 0 ; i < entry->count ; i++)
 		{
-			inet_ntop(AF_INET,&entry->ip[i],ipv4,16);
-			fprintf(stdout,"%-4d%-13s%17s%6u\n",i+1,entry->peerid[i],ipv4,entry->port[i]);
+			maxid = maxid > strlen(entry->peerid[i]) ? maxid : strlen(entry->peerid[i]);
+			//printf("max %d\n",maxid);
 		}
+		fprintf(stdout,"No. id%-*sIP%-*s Port%-*s \n",maxid," ",16," ",5," ");
+		for(i = 0 ; i < entry->count ; i++)
+		{
+			//max = max > strlen(entry->peerid[i]) ? max : strlen(entry->peerid[i]);
+			inet_ntop(AF_INET,&entry->ip[i],ipv4,16);
+			fprintf(stdout,"%-4d%-*s  %-16s   %-5u\n",i+1,maxid,entry->peerid[i],ipv4,entry->port[i]);
+			//printf("max %d\n",max);
+		}
+	}else if(head->type == NW_OPER_TYPE)
+	{
+		struct nw_type *type = (struct nw_type *)head;
+		fprintf(stdout,"mode       \t%s   \n",mode_str(type->mode));
 	}else if(head->type == NW_OPER_BIND)
 	{
 		struct nw_bind *bind = (struct nw_bind *) head;
@@ -246,10 +258,6 @@ void do_read(struct nw_oper_head *head)
 		struct nw_ping *ping = (struct nw_ping *)head;
 		fprintf(stdout,"interval   \t%dms   \n",ping->interval);
 		fprintf(stdout,"timeout    \t%dms   \n",ping->timeout);
-	}else if(head->type == NW_OPER_TYPE)
-	{
-		struct nw_type *type = (struct nw_type *)head;
-		fprintf(stdout,"mode       \t%s   \n",mode_str(type->mode));
 	}else if(head->type == NW_OPER_DEVSTAT)
 	{
 		char *dev = NULL;
@@ -257,7 +265,6 @@ void do_read(struct nw_oper_head *head)
 		ret = nw_search_if(dev);
 		if(ret)
 			fprintf(stderr,"dev not found.");
-
 	}
 	else if(head->type == NW_OPER_OTHER )
 	{

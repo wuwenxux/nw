@@ -17,7 +17,7 @@
  **/
 static struct nw_config* add_config(struct nw_file *file,const char *path);
 /**
- * Add a key value pair option into nw_option object from nw_config;
+ * Add a nw_option object into  nw_config;
  * @key ,@value must be valid  if either of them is NULL, return NULL.
  * Return:a nw_option object ,NULL if  operation failed or invalid input(either of config,key,value is NULL).
  * @config:the config interface.
@@ -25,6 +25,14 @@ static struct nw_config* add_config(struct nw_file *file,const char *path);
  * @value:value of the option
  **/
 static struct nw_option* add_option(struct nw_config *config,const char *key,const char *value);
+/**
+ * Add a value to nw_val object.
+ * @opt,value must be valid if either of them is NULL, return NULL.
+ * Return: a nw_option object, NULL if not exist,or param error.
+ * @nw_option:nw_option object.
+ * @opt:the option object.
+ * @value:val of this opt.
+ **/
 static struct nw_option* add_value(struct nw_option *opt, const char *value);
 /**
  * Find a nw_config from the nw_file file
@@ -34,14 +42,6 @@ static struct nw_option* add_value(struct nw_option *opt, const char *value);
  * @name:name of this nw_config
  **/ 
 struct nw_config* find_config(struct nw_file *file,const char *name);
-/**
- * Find the value of a nw_option
- * Return : the value of a nw_option,NULL if not exist
- * @name:name of the config,if NULL return NULL
- * @key:key of the option,if NULL return NULL
- **
-char* find_value(struct nw_config *name,const char *key);
-*/
 /**
  * Find a option in the nw_conf object.
  * @name and @key are supposed to be valid ,if not ,return NULL.
@@ -102,7 +102,6 @@ struct nw_file *file_open(char *path)
 		   {
 				conf_name = strtok(NULL," ");
 			 	assert(conf_name != NULL);
-			//	printf("conf name :%s",conf_name);
 			 	trim(conf_name,trim_str);
 				thisConfig = add_config(file,conf_name);
 		   }else
@@ -136,6 +135,7 @@ int nw_load_conf(char *path)
 	struct nw_config *thisConf = NULL;
 	struct nw_option *thisOpt = NULL;
 	struct nw_value *thisVal = NULL;
+	bool ping_set[2] ={false,false};
 	struct nw_self s;
 	struct nw_ping p;
 	struct nw_bind b;
@@ -147,7 +147,7 @@ int nw_load_conf(char *path)
 	memset(&b,0,sizeof(struct nw_bind));
 	memset(&t,0,sizeof(struct nw_type));
 	memset(&p,0,sizeof(struct nw_ping));
-	size_t peerIndex;
+	size_t peerIndex=0;
 	int ret;
 	char dev[IF_NAMESIZE];
 	char ipaddr[16];
@@ -158,10 +158,10 @@ int nw_load_conf(char *path)
 	char peer_id[MAX_PEERNAME_LENGTH];
 	u32 peer_ip;
 	u16 peer_port;
-	bool set_mptcp;
-	printf("Removing previous configuration....\n");
-	sleep(2);
+	bool set_mptcp = false;
+	printf("Processing ...\n");
 	nw_clear();
+	sleep(1);
 	if((file = file_open(path))== NULL)
 	{
 		fprintf(stderr,"Can't open path %s",path);
@@ -170,16 +170,12 @@ int nw_load_conf(char *path)
 	thisConf = file->configs;
 	while(thisConf)
 	{
-		//printf("set up %s",thisConf->name);
-		peerIndex = 0;
 		thisOpt = thisConf->options;
 		while(thisOpt)
 		{	
-			//printf("\n%s ",thisOpt->key);
 			thisVal = thisOpt->values;
 			while(thisVal)
 			{
-				//printf("%s ",thisVal->string);
 				if(strcmp(thisOpt->key,"ifname")==0 )
 				{
 					strcpy(dev ,thisVal->string);
@@ -199,11 +195,18 @@ int nw_load_conf(char *path)
 						t.mode = NW_MODE_CLIENT;
 					else if(find_value(thisOpt,"server") == 0)
 						t.mode = NW_MODE_SERVER;
+					else
+					{
+						ret =cli_ser(thisOpt->key,thisVal->string);
+						goto RETURN;
+					}
 				}else if(strcmp(thisOpt->key,"bindport")== 0)
 				{
 					if(get_unsigned16(&b.port,thisVal->string,10))
 					{	
-						fprintf(stderr,"%s not a valid unsigned short value\n",thisVal->string);
+						fprintf(stderr,"\'%s\' param \'%s\' : \'%s\' is not a valid unsigned short value\n",thisConf->name,thisOpt->key,thisVal->string);
+						ret = -1;
+						goto RETURN;
 					}
 				}else if(strcmp(thisOpt->key,"log") == 0)
 				{
@@ -218,45 +221,43 @@ int nw_load_conf(char *path)
 				{
 					if(check_opt_peer(dev,thisVal->string,peer_id,&peer_ip,&peer_port))
 					{
-						fprintf(stderr,"Invalid option string %s\n",thisVal->string);
+						fprintf(stderr,"\'%s\' param \'%s\' :invalid option string %s\n",thisConf->name,thisOpt->key,thisVal->string);
 						ret = -1;
 						goto RETURN;
 					}
 					strcpy(entry->peerid[peerIndex],peer_id);
 					entry->ip[peerIndex] = peer_ip;
 					entry->port[peerIndex] = peer_port;
-					//printf("%s %u %u",entry->peerid[peerIndex],entry->ip[peerIndex],entry->port[peerIndex]);
 					peerIndex++;
 				}else if(strcmp(thisOpt->key,"bufflen") == 0)
 				{
 					assert(thisVal->string != NULL);
 					if(get_unsigned32(&o.bufflen,thisVal->string,10))
 					{	
-						fprintf(stderr,"Not a valid nw bufflen value\n.");
+						fprintf(stderr,"\'%s\' param \'%s\' :not a valid nw bufflen value\n.",thisConf->name ,thisOpt->key);
 						ret = -1;
 						goto RETURN;
 					}
 				}
-				else if(strcmp(thisOpt->key,"budget")==0)
+				else if(strcmp(thisOpt->key,"budget") == 0)
 				{
 					assert(thisVal->string != NULL);
 					if(get_unsigned32(&o.budget,thisVal->string,10))
 					{	
-						fprintf(stderr,"Not a valid nw budget value\n");
+						fprintf(stderr,"\'%s\' param \'%s\':can be divided by 64.\n",thisConf->name ,thisOpt->key);
 						ret = -1;
 						goto RETURN;
 					}
 				}
 				else if(strcmp(thisOpt->key,"oneclient")== 0)
 				{
-					
 					if(find_value(thisOpt,"yes") == 0 ||find_value(thisOpt,"no") == 0)
 					{
 						strcpy(o.oneclient,thisVal->string);
 					} 
 					else 
 					{
-						fprintf(stderr,"Only yes or no.\n");	
+						fprintf(stderr,"\'%s\' param \'%s\':should be only yes or no.\n",thisConf->name ,thisOpt->key);	
 						ret = -1;
 						goto RETURN;
 					}
@@ -265,37 +266,35 @@ int nw_load_conf(char *path)
 				{
 					if(get_unsigned32(&o.queuelen,thisVal->string,10))
 					{
-						fprintf(stderr,"Invalid queuelen val.\n");
+						fprintf(stderr,"\'%s\' param \'%s\':invalid queuelen val.\n",thisConf->name,thisOpt->key);
 						ret = -1;
 						goto RETURN;
 					}
 				}
 				else if(strcmp(thisOpt->key,"idletimeout")==0)
 				{
-					assert(get_unsigned32(&o.idletimeout,thisVal->string,10) == 0);
 					if(get_unsigned32(&o.idletimeout,thisVal->string,10))
 					{
-						fprintf(stderr,"Invalid idletimeout value.\n");
+						fprintf(stderr,"\'%s\' param \'%s\':invalid idletimeout value.\n",thisConf->name,thisOpt->key);
 						ret = -1;
 						goto RETURN;
 					}
 				}
 				else if(strcmp(thisOpt->key,"batch") == 0)
 				{
-					assert(get_unsigned32(&o.batch,thisVal->string,10) == 0);
 					if(get_unsigned32(&o.batch,thisVal->string,10))
 					{
-						fprintf(stderr,"Invalid batch value.\n");
+						fprintf(stderr,"\'%s\' param \'%s\':invalid batch value.\n",thisConf->name,thisOpt->key);
 						ret = -1;
 						goto RETURN;
 					}
 				}
-				else if(strcmp(thisOpt->key,"swtichtimeout")==0)
+				else if(strcmp(thisOpt->key,"swtichtimeout") ==0)
 				{
 					assert(get_unsigned32(&o.switchtime,thisVal->string,10)==0);
 					if(get_unsigned32(&o.switchtime,thisVal->string,10))
 					{
-						fprintf(stderr,"Invalid switchtime value\n");
+						fprintf(stderr,"\'%s\' param \'%s\':invalid switchtime value\n",thisConf->name,thisOpt->key);
 						ret = -1;
 						goto RETURN;
 					}
@@ -305,16 +304,22 @@ int nw_load_conf(char *path)
 					assert(get_unsigned32(&o.switchtime,thisVal->string,10)==0);
 					if(get_unsigned32(&p.interval,thisVal->string,10))
 					{
-						fprintf(stderr,"Not a valid unsigned int value\n");
+						fprintf(stderr,"\'%s\' param \'%s\':not a valid unsigned int value\n",thisConf->name,thisOpt->key);
+						ret = -1;
+						goto RETURN;
 					}
+					ping_set[0]= true;
 				}
 				else if(strcmp(thisOpt->key,"timeout")==0)
 				{
 					assert(get_unsigned32(&p.timeout,thisVal->string,10) == 0);
 					if(get_unsigned32(&p.timeout,thisVal->string,10))
 					{
-						fprintf(stderr,"Not a valid unsigned int value\n");
+						fprintf(stderr,"\'%s\' param \'%s\':not a valid unsigned int value\n",thisConf->name,thisOpt->key);
+						ret = -1;
+						goto RETURN;
 					}
+					ping_set[1] = true;
 				}
 				else if(strcmp(thisOpt->key,"ownid")==0 && check_self(thisVal->string)== 0)
 				{	
@@ -330,8 +335,7 @@ int nw_load_conf(char *path)
 						set_mptcp =false;
 					}else 
 					{
-						on_off("multipath",thisVal->string);
-						ret = -1;
+						ret = on_off("multipath",thisVal->string);
 						goto RETURN;
 					}
 				}
@@ -356,13 +360,13 @@ int nw_load_conf(char *path)
 			fprintf(stderr,"setup %s failed\n",dev);
 			goto RETURN;
 		}
-		fprintf(stdout,"Device %s setup success.\n",dev);
+		
 		if(o.batch||o.bufflen||o.idletimeout||o.switchtime||o.budget||o.queuelen||strlen(o.oneclient)||strlen(o.showlog))
 		{
 			if((ret = nw_other_set(dev,&o)))
 				goto RETURN;
 		}
-		if(p.interval&&p.timeout)
+		if(ping_set[0] == true && ping_set[1] == true)
 		{	
 			if(p.interval < p.timeout)
 			{	
@@ -370,7 +374,7 @@ int nw_load_conf(char *path)
 					goto RETURN;
 			}else
 			{
-				fprintf(stderr,"Interval shoule be smaller than timeout.\n");
+				fprintf(stderr,"%s interval shoule be smaller than timeout.\n",dev);
 			}
 		}
 		if(b.port)
@@ -397,19 +401,22 @@ int nw_load_conf(char *path)
 		if(peerIndex)
 		{
 			entry->count = peerIndex;
-			//printf("entry->count:%u\n",entry->count);
 			if((ret = nw_do_add(dev,entry)))
 				goto RETURN;
 		}
 		if((ret = nw_mptcp_set(dev,set_mptcp)))
 				goto RETURN;
+		fprintf(stdout,"Dev %s setup success.\n",dev);
 		memset(entry,0,sizeof(struct nw_peer_entry));
 		memset(&o,0,sizeof(struct nw_other));
 		memset(&s,0,sizeof(struct nw_self));
 		memset(&b,0,sizeof(struct nw_bind));
 		memset(&t,0,sizeof(struct nw_type));
 		memset(&p,0,sizeof(struct nw_ping));
-		sleep(1);
+		ping_set[0] = false;
+		ping_set[1] = false;
+		set_mptcp = false;
+		peerIndex = 0;
 		thisConf = thisConf->next;
 	}
 	goto RETURN;
@@ -417,39 +424,6 @@ RETURN:
 	free(entry);
 	file_close(&file);
 	return ret;
-}
-
-static int nw_overwrite(char *argv)
-{
-	char buf[512], ch;
-
-	printf(" overwrite (yes/no)? ");
-
-	memset(buf, 0, sizeof(buf));
-
-	for(;;) {
-		ch = fgetc(stdin);
-		if (isprint(ch)) {
-		//	printf("%c", ch);
-			strncat(buf, &ch, 1);
-		} else if ((ch == '\n') || (ch == '\r')) {
-			printf("%c", ch);
-			break;
-		} else if (ch == '\b' || ch == 0x7f) {
-			/* BackSpace */
-			if (strlen(buf)) {
-				buf[strlen(buf)-1] = '\0';
-				printf("\b");
-				printf("\x1b[0J");
-			}
-		}
-	}
-	if (buf[0] == 'y') {
-		if ((strcmp(buf, "yes") == 0) || strlen(buf) == 1) {
-			return 0;
-		}
-	}
-	return -1;
 }
 int nw_save_conf(char *path)
 {
@@ -461,14 +435,6 @@ int nw_save_conf(char *path)
 	//int j= 0;
 	char *i,*dev;
 	char buf[256];
-	if((save_fp = fopen(path,"r")) == NULL)
-	{
-		//do nothing.
-	}else if(nw_overwrite(path) != 0)
-	{
-		ret = 0;
-		goto RETURN;
-	}
 	memset(buf,0,sizeof(buf));
 	if(( fp = popen(cmd,"r")) == NULL)
 	{
@@ -478,6 +444,7 @@ int nw_save_conf(char *path)
 	}
 	if((save_fp = fopen(path,"w")) == NULL)
 	{
+		fprintf(stderr,"Can't open file: %s.\n",path);
 		ret = -1;
 		goto RETURN;
 	}
@@ -504,15 +471,17 @@ int nw_save_conf(char *path)
 				fprintf(stderr,"Conf %s save failed.\n",dev);
 				goto RETURN;
 			}
+			sleep(1);
 			printf("Config %s save success.\n",dev);
+			
 		}
 	}
 	goto RETURN;
 RETURN:
-	if(fp != NULL)
-		pclose(fp);
 	if(save_fp != NULL)
 		fclose(save_fp);
+	if(fp != NULL)
+		pclose(fp);
 	return ret;
 }
 static int nw_save_dev(FILE *fp,const char *dev)
@@ -595,7 +564,7 @@ static int nw_remove(const char *dev)
 	int ret ;
 	assert(dev != NULL);
 	char rm_cmd[50];
-	sprintf(rm_cmd,"sudo ip link del dev %s",dev);
+	sprintf(rm_cmd,"ip link del dev %s",dev);
 	ret = system(rm_cmd);
 	if(ret)
 		return -1;
@@ -608,7 +577,7 @@ static void nw_clear()
 	FILE *fp = NULL;
 	char buf[256];
 	memset(buf,0,256);
-	sprintf(show_cmd,"sudo ip link show type ngmwan");
+	sprintf(show_cmd,"ip link show type ngmwan");
 	char *i,
 		 *d;
 	if((fp = popen(show_cmd,"r")) == NULL)
@@ -657,12 +626,12 @@ int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 		fprintf(stderr,"%s is already exist. change a ifname\n",dev);
 		return -1;
 	}
-	sprintf(dev_cmd,"sudo ip link add %s type ngmwan",dev);
+	sprintf(dev_cmd,"ip link add %s type ngmwan",dev);
 	strcpy(ip_v4,ip_str);
 	assert(check_ipv4(ip_v4)==0);
 	strcpy(mask_str,netmask);
 	assert(check_netmask(mask_str)==0);
-	sprintf(ip_cmd,"sudo ip addr add %s/%s dev %s ",ip_v4,mask_str,dev);
+	sprintf(ip_cmd,"ip addr add %s/%s dev %s ",ip_v4,mask_str,dev);
 	ret = system(dev_cmd);
 	if(ret)
 	{

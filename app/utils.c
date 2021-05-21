@@ -129,7 +129,7 @@ static int __check_ifname(const char *name)
 void invarg(const char *msg, const char *arg)
 {
 	fprintf(stderr, "Error: argument \"%s\" is wrong,%s\n", arg, msg);
-	exit(EXIT_FAILURE);
+	return;
 }
 
 int check_ifname(const char *name)
@@ -150,17 +150,15 @@ void duparg(const char *key, const char *arg)
 	fprintf(stderr,
 		"Error: duplicate \"%s\": \"%s\" is the second value.\n",
 		key, arg);
-	exit(EXIT_FAILURE);
+	return;
 }
-
 void duparg2(const char *key, const char *arg)
 {
 	fprintf(stderr,
-		"Error: either \"%s\" is duplicate, or \"%s\" is a garbage.\n",
-		key, arg);
-	exit(EXIT_FAILURE);
+		"Error:  \"%s\" is a not a parameter of dev %s.\n",
+		arg,key);
+	return;
 }
-
 int get_unsigned32(unsigned int *val, const char *arg, int base)
 {
 	unsigned long res;

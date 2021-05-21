@@ -24,7 +24,7 @@ int nw_peer_change(int argc, char **argv)
 	char *dev = NULL;
 	char peerid[MAX_PEERNAME_LENGTH];
 	char peerip[IPV4NAMESIZE];
-	u16   peerport;
+	u16  peerport;
 	struct nw_peer_entry *entry = (struct nw_peer_entry *)calloc(1,sizeof(struct nw_peer_entry));
 	if(entry == NULL)
 	{
@@ -67,17 +67,19 @@ int nw_peer_change(int argc, char **argv)
 			if(dev)
 			{
 				free(entry);
-				duparg2("dev",*argv);
+				duparg2(dev,*argv);
 			}
 			if(check_ifname(*argv) )
 			{
 				free(entry);
 				invarg("\"dev\" not a valid ifname", *argv);
+				return -1;
 			}
 			if(check_nw_if(*argv))
 			{
 				free(entry);
 				invarg("not a running nw dev.",*argv);
+				return -1;
 			}
 			dev = *argv;
 		}
@@ -141,6 +143,7 @@ int nw_peer_del(int argc, char ** argv)
 					strcpy(entry->peerid[i],cur);
 				}
 				entry->count = i;
+
 			}
 		}else 
 		{
@@ -152,17 +155,21 @@ int nw_peer_del(int argc, char ** argv)
 			{
 				free(entry);
 				duparg2("dev",*argv);
+				return -1;
 			}
-			if(check_ifname(*argv) )
+			if(check_ifname(*argv))
 			{
 				free(entry);
 				invarg("\"dev\" not a valid ifname", *argv);
+				return -1;
 			}
 			if(check_nw_if(*argv))
 			{
 				free(entry);
 				invarg("not a running nw dev.",*argv);
+				return -1;
 			}
+			dev = *argv;
 		}
 		argc--;	argv++;
 	}

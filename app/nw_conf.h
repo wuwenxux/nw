@@ -5,7 +5,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/queue.h>
-
 /**
  * Structures
  * Struct of a conf file(name, configs) 
@@ -91,6 +90,12 @@ void file_close(struct nw_file **file);
  * Remove all nw dev
  **/
 static void nw_clear();
+/**
+ * Load conf
+ * Return 0 success , -1 fail
+ * @path: path to the conf file 
+ **/
+int nw_load_conf(char *path);
 /**
  * Save one nw dev interface
  * Return:0 success , -1 failure
