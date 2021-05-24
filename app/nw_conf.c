@@ -229,7 +229,7 @@ int nw_load_conf(char *path)
 					entry->ip[peerIndex] = peer_ip;
 					entry->port[peerIndex] = peer_port;
 					peerIndex++;
-				}else if(strcmp(thisOpt->key,"bufflen") == 0)
+				}/*else if(strcmp(thisOpt->key,"bufflen") == 0)
 				{
 					assert(thisVal->string != NULL);
 					if(get_unsigned32(&o.bufflen,thisVal->string,10))
@@ -238,7 +238,7 @@ int nw_load_conf(char *path)
 						ret = -1;
 						goto RETURN;
 					}
-				}
+				}*/
 				else if(strcmp(thisOpt->key,"budget") == 0)
 				{
 					assert(thisVal->string != NULL);
@@ -279,8 +279,7 @@ int nw_load_conf(char *path)
 						ret = -1;
 						goto RETURN;
 					}
-				}
-				else if(strcmp(thisOpt->key,"batch") == 0)
+				}/*else if(strcmp(thisOpt->key,"batch") == 0)
 				{
 					if(get_unsigned32(&o.batch,thisVal->string,10))
 					{
@@ -288,7 +287,7 @@ int nw_load_conf(char *path)
 						ret = -1;
 						goto RETURN;
 					}
-				}
+				}*/
 				else if(strcmp(thisOpt->key,"swtichtimeout") ==0)
 				{
 					assert(get_unsigned32(&o.switchtime,thisVal->string,10)==0);
@@ -361,7 +360,9 @@ int nw_load_conf(char *path)
 			goto RETURN;
 		}
 		
-		if(o.batch||o.bufflen||o.idletimeout||o.switchtime||o.budget||o.queuelen||strlen(o.oneclient)||strlen(o.showlog))
+		if(o.idletimeout||o.switchtime||o.budget||o.queuelen||
+			strlen(o.oneclient)||strlen(o.showlog)||strlen(o.isolate)||strlen(o.simpleroute)||
+			strlen(o.compress))
 		{
 			if((ret = nw_other_set(dev,&o)))
 				goto RETURN;
@@ -416,6 +417,7 @@ int nw_load_conf(char *path)
 		ping_set[0] = false;
 		ping_set[1] = false;
 		set_mptcp = false;
+		strcpy(log,"no");
 		peerIndex = 0;
 		thisConf = thisConf->next;
 	}
@@ -762,8 +764,8 @@ struct nw_config* find_config(struct nw_file *file,const char *name)
 	struct nw_config *thisConf= NULL;
 	if(file == NULL || name == NULL )
 	{
-		fprintf(stderr,"Neither file nor name can  be NULL.\n");
-		exit(EXIT_FAILURE);
+		fprintf(stderr,"File not exist,param error.\n");
+		return NULL;
 	}
 	//first conf
 	thisConf = file->configs;
@@ -780,7 +782,10 @@ struct nw_option* find_option(struct nw_config *conf,const char *key)
 {
 	struct nw_option *thisOpt = NULL;
 	if(conf == NULL || key == NULL)
+	{
+		fprintf(stderr,"Conf not exist,param error.\n");
 		return NULL;
+	}
 	thisOpt = conf->options;
 
 	while(thisOpt)
@@ -795,7 +800,10 @@ int  find_value(struct nw_option *opt,const char *val)
 {
 	struct nw_value *thisVal = NULL;
 	if(opt == NULL || val == NULL)
+	{
+		fprintf(stderr,"Opt not exist,param error.\n");
 		return -1;
+	}
 	thisVal = opt->values;
 	while(thisVal)
 	{
@@ -820,7 +828,10 @@ void file_close(struct nw_file **file)
 	struct nw_value *nextVal = NULL;
 	assert(file != NULL || *file != NULL);
 	if(file == NULL || *file == NULL)
+	{
+		fprintf(stderr,"File not exist, params error.\n");
 		return;
+	}
 	thisConf = (*file)->configs;
 	while(thisConf)
 	{
@@ -872,21 +883,21 @@ static void nw_dev_conf_export(FILE *fp,
 	strcpy(ip_mask,mask);
 	assert(s_ptr != NULL);
 	assert(npe != NULL);
-	assert(dev!=NULL);
-	//struct nw_config *thisConfig = NULL;
-	//struct nw_config *preConfig = NULL;
+	assert(dev != NULL);
 	fprintf(fp,"config interface \'%s\'\n",dev);
 	fprintf(fp,"\toption ifname \'%s\'\n",dev);
 	fprintf(fp,"\toption proto \'static\'\n");
 	fprintf(fp,"\toption ipaddr \'%s\'\n",ip_v4);
 	fprintf(fp,"\toption netmask \'%s\'\n",ip_mask);
-	fprintf(fp,"\toption bufflen \'%u\'\n",o_ptr->bufflen);
 	fprintf(fp,"\toption budget \'%u\'\n",o_ptr->budget);
 	fprintf(fp,"\toption idletimeout \'%u\'\n",o_ptr->idletimeout);
 	fprintf(fp,"\toption oneclient \'%s\'\n",o_ptr->oneclient);
+	fprintf(fp,"\toption autopeer \'%s\'\n",o_ptr->autopeer);
+	fprintf(fp,"\toption compress \'%s\'\n",o_ptr->compress);
+	fprintf(fp,"\toption simpleroute \'%s\'\n",o_ptr->simpleroute);
 	fprintf(fp,"\toption queuelen \'%u\'\n",o_ptr->queuelen);
 	fprintf(fp,"\toption log \'%s\'\n",o_ptr->showlog);
-	fprintf(fp,"\toption batch \'%u\'\n",o_ptr->batch);
+	fprintf(fp,"\toption isolate \'%s\'\n",o_ptr->isolate);
 	fprintf(fp,"\toption switchtime \'%u\'\n",o_ptr->switchtime);
 	fprintf(fp,"\toption bindport \'%d\'\n",b_ptr->port);
 	fprintf(fp,"\toption interval \'%u\'\n",p_ptr->interval);

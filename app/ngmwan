@@ -11,7 +11,7 @@ config interface 'nw1'
       option budget '292'
       option ownid 'ppppp2'
       #multipath on or off only
-      option peer 'p66666666666666666666666666,192.168.2.35,86'
+      option peer 'p66666666666666666666666666,192.168.2.35,84'
       option peer 'p4,192.168.2.36,85'
       option peer 'p5,192.168.2.37,86'
       option peer 'p6,192.168.2.38,87'

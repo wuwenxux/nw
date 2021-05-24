@@ -13,7 +13,7 @@
 
 static bool is_other(bool other[],size_t);
 static void other_print(struct nw_other *,bool [],size_t);
-static void peer_print(struct nw_peer_entry *,char *);
+static void peer_print(struct nw_peer_entry *,char *,int);
 static void ping_print(struct nw_ping *,bool[]);
 
 
@@ -35,12 +35,15 @@ void nw_peer_usage(void)
 void nw_set_usage(void)
 {
 	fprintf(stderr, "Usage:...set dev DEV  TYPE\n"
-					"						bufflen     BUFFLEN\n"
+					"						autopeer    YES|NO\n"
+					"						isolate		YES|NO\n"
+					"						compress	YES|NO\n"
+					"						simpleroute YES|NO\n"
+					"						oneclient   YES|NO\n"
+					"						showlog     YES|NO\n"
 				    "						budget  	MAXBUFLEN\n"
 				    "						queuelen    QUEUELEN\n"
 				    "						idletimeout TIMEVALUE\n"
-					"						oneclient   YES|NO\n"
-					"						showlog     YES|NO\n"
 					"						batch       BATCH\n"
 					"						switchtime  SWITCHTIME\n"
 					"						bindport 	PORT\n");
@@ -49,15 +52,18 @@ void nw_set_usage(void)
 void nw_show_usage(void)
 {
 	fprintf(stderr, "Usage:...show DEV  TYPE\n"
-					"					bufflen     BUFFLEN\n"
-				    "					budget  MAXBUFLEN\n"
-				    "					queuelen    QUEUELEN\n"
-				    "					idletimeout TIMEVALUE\n"
-					"					oneclient   YES|NO\n"
-					"					showlog     YES|NO\n"
-					"					batch       BATCH\n"
-					"					switchtime  SWITCHTIME\n"
-					"					bindport 	PORT\n");
+					"						autopeer    YES|NO\n"
+					"						isolate		YES|NO\n"
+					"						compress	YES|NO\n"
+					"						simpleroute YES|NO\n"
+				    "						budget  MAXBUFLEN\n"
+				    "						queuelen    QUEUELEN\n"
+				    "						idletimeout TIMEVALUE\n"
+					"						oneclient   YES|NO\n"
+					"						showlog     YES|NO\n"
+					"						batch       BATCH\n"
+					"						switchtime  SWITCHTIME\n"
+					"						bindport 	PORT\n");
 	exit(-1);
 
 }
@@ -88,11 +94,13 @@ void  nw_usage(void)
 			" 	nw set 	  { DEVICE | dev DEVICE }\n"
 			"					 	[ bindport PORTNUM ]|\n"
 			"						[ interval INTERVAL timeout TIMEOUT ]|\n "
-			"						[ bufflen BUFFLEN ]|\n"
+			"						autopeer    YES|NO\n"
+			"						isolate		YES|NO\n"
+			"						compress	YES|NO\n"
+			"						simpleroute YES|NO\n"
 			"						[ budget budget ]\n"
 			"						[ queuelen QUEUELEN ]|\n"
 			"						[ oneclient {yes|no} ]|\n"
-			"						[ batch BATCHSIZE ]|\n"
 			"						[ idletimeout TIMEINTERVAL ]|\n"
 			"						[ log {yes|no} ]\n"
 			"						[ ownid OWNID ]\n"
@@ -192,9 +200,8 @@ int main(int argc,char *argv[])
 				}
 				path = *argv;
 			}
-			return nw_load_conf(path);	
-		}
-		else if (matches(*argv,"save") == 0)
+			return nw_load_conf(path);
+		}else if (matches(*argv,"save") == 0)
 		{
 			if(NEXT_ARG_OK())
 			{
@@ -300,6 +307,8 @@ int nw_dev_show(int argc, char **argv)
 	bool r_bind = false;
 	bool peerid = false;
 	bool r_self = false;
+	int idlen;
+	char *tempPeers = NULL;
 	char *cur = NULL;
 	struct nw_self self;
 	struct nw_other other;
@@ -317,7 +326,12 @@ int nw_dev_show(int argc, char **argv)
 	
 	while(argc > 0)
 	{
+		/*
 		if(strcmp(*argv,"bufflen") == 0)
+		{
+			r_other[0] = true;
+		}else */
+		if(strcmp(*argv,"") == 0)
 		{
 			r_other[0] = true;
 		}else if(strcmp(*argv,"budget") == 0) 
@@ -332,10 +346,10 @@ int nw_dev_show(int argc, char **argv)
 		}else if(strcmp(*argv,"log") == 0 )
 		{
 			r_other[4] = true;
-		}else if(strcmp(*argv,"batch") == 0 )
+		}/*else if(strcmp(*argv,"batch") == 0 )
 		{
 			r_other[5] = true;
-		}else if(strcmp(*argv,"idletimeout") == 0)
+		}*/else if(strcmp(*argv,"idletimeout") == 0)
 		{
 			r_other[6] = true;
 		}else if (strcmp(*argv,"switchtime") == 0)
@@ -384,7 +398,7 @@ int nw_dev_show(int argc, char **argv)
 				NEXT_ARG();
 			if(dev)
 			{
-				duparg2("dev",*argv);
+				duparg2(dev,*argv);
 				goto FAILED;
 			}
 			if(check_ifname(*argv))
@@ -451,12 +465,22 @@ int nw_dev_show(int argc, char **argv)
 	}
 	if(peer_id&& strlen(peers) > 0)
 	{
+		idlen = 0;
 		ret = nw_do_peer_list(dev,entry);
-		fprintf(stdout,"No.\tid\tpeerip\t\tpeerport\n");
+		tempPeers = malloc(strlen(peers));
+		if( tempPeers == NULL)
+			return -1;
+		strcpy(tempPeers,peers);
+		for( i = 0,cur = strtok(tempPeers,","); cur != NULL; cur = strtok(NULL,","), i++)
+		{
+			idlen = idlen > strlen(cur) ? idlen : strlen(cur);
+		}
+		fprintf(stdout,"No. Id%-*sIP%-*s Port%-*s \n",idlen," ",15," ",5," ");	
 		for( i = 0,cur = strtok(peers,","); cur != NULL; cur = strtok(NULL,","), i++)
 		{
-			peer_print(entry,cur);
+			peer_print(entry,cur,idlen);
 		}
+		free(tempPeers);
 	}
 	if(r_self)
 	{
@@ -496,25 +520,12 @@ int nw_dev_set(int argc, char **argv)
 
 	while(argc > 0)
 	{
-		if(strcmp(*argv,"bufflen") == 0)//other.bufflen
-		{
-			NEXT_ARG();
-			if( other.bufflen != 0)
-			{
-				duparg("bufflen",*argv);
-				return -1;
-			}
-			if(get_unsigned32(&other.bufflen,*argv,0) || other.bufflen > 1024*4 || other.bufflen < 64)
-			{
-				invarg("invalid \"bufflen\" value between [64,1024*4] expected.\n",*argv);
-				return -1;
-			}	
-		}else if(matches(*argv,"budget") == 0 || matches(*argv,"maxblen") == 0)//other.budget
+		if(matches(*argv,"budget") == 0 || matches(*argv,"maxblen") == 0)//other.budget
 		{
 			NEXT_ARG();
 			if(get_unsigned32(&other.budget,*argv,0))
 			{
-				invarg("invalid \"budget\" value\n",*argv);
+				invarg("invalid \"budget\" value,is supposed to be divided by 64.\n",*argv);
 				return -1;
 			}
 		}else if(matches(*argv,"queuelen") == 0|| matches(*argv,"qlen") == 0)//other.queuelen
@@ -522,7 +533,7 @@ int nw_dev_set(int argc, char **argv)
 			NEXT_ARG();
 			if(get_unsigned32(&other.queuelen,*argv,0) || other.queuelen > 1000000 || other.queuelen < 1000)
 			{
-				invarg("invalid \"budget\" value\n",*argv);
+				invarg("invalid \"budget\" value,is supposed to be between [1000,1000000].\n",*argv);
 				return -1;		
 			}	
 		}else if(matches(*argv,"oneclient") == 0|| matches(*argv,"onecli") == 0)//other.oneclient
@@ -551,20 +562,64 @@ int nw_dev_set(int argc, char **argv)
 			{
 				return yes_no("log",*argv);
 			}
-		}else if (matches(*argv,"batch") == 0 || matches(*argv,"bat") == 0)//other.batch
+		}else if(matches(*argv,"autopeer") == 0) //other.showlog
 		{
 			NEXT_ARG();
-			if(get_unsigned32(&other.batch,*argv,0) || other.batch >200 ||other.batch < 10)
+			if(strcmp(*argv,"yes") == 0)
 			{
-				invarg("invalid \"batch\" value\n",*argv);
-				return -1;
+				strncpy(other.autopeer,"yes",4);
+			}else if (strcmp(*argv,"no") == 0)
+			{
+				strncpy(other.autopeer,"no",3);
+			}else
+			{
+				return yes_no("autopeer",*argv);
+			}
+		}else if(matches(*argv,"isolate") == 0) //other.showlog
+		{
+			NEXT_ARG();
+			if(strcmp(*argv,"yes") == 0)
+			{
+				strncpy(other.isolate,"yes",4);
+			}else if (strcmp(*argv,"no") == 0)
+			{
+				strncpy(other.isolate,"no",3);
+			}else
+			{
+				return yes_no("isolate",*argv);
+			}
+		}else if(matches(*argv,"compress") == 0) //other.showlog
+		{
+			NEXT_ARG();
+			if(strcmp(*argv,"yes") == 0)
+			{
+				strncpy(other.compress,"yes",4);
+			}else if (strcmp(*argv,"no") == 0)
+			{
+				strncpy(other.compress,"no",3);
+			}else
+			{
+				return yes_no("compress",*argv);
+			}
+		}else if(matches(*argv,"simpleroute") == 0) //other.showlog
+		{
+			NEXT_ARG();
+			if(strcmp(*argv,"yes") == 0)
+			{
+				strncpy(other.simpleroute,"yes",4);
+			}else if (strcmp(*argv,"no") == 0)
+			{
+				strncpy(other.simpleroute,"no",3);
+			}else
+			{
+				return yes_no("simpleroute",*argv);
 			}
 		}else if (matches(*argv,"idletimeout") == 0 || matches(*argv,"idle") == 0) //nw_ping
 		{
 			NEXT_ARG();
 			if(get_unsigned32(&other.idletimeout,*argv,0) || other.idletimeout < 30 )
 			{
-				invarg("invalid \"idletimeout\" value\n",*argv);
+				invarg("invalid \"idletimeout\" value,supposed to be greater than 30\n",*argv);
 				return -1;
 			}
 		}else if( matches(*argv,"mode") == 0) //nw_type
@@ -632,16 +687,12 @@ int nw_dev_set(int argc, char **argv)
 			{
 				NEXT_ARG();
 				set_mptcp = true;
-			if(strcmp(*argv,"on") == 0)
-				mptcp = true;
-			else if (strcmp(*argv,"off") == 0)
-				mptcp = false;
-			else
-				return on_off("multipath",*argv);
-			}else
-			{
-				fprintf(stderr,"multipath value \"on\" or \"off\" is expected.\n");
-				return -1;
+				if(strcmp(*argv,"on") == 0)
+					mptcp = true;
+				else if (strcmp(*argv,"off") == 0)
+					mptcp = false;
+				else
+					return on_off("multipath",*argv);
 			}
 		}else{//head.devname
 			if(strcmp(*argv,"dev") == 0 )
@@ -672,7 +723,9 @@ int nw_dev_set(int argc, char **argv)
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
 		exit(-1);
 	}
-	if(other.batch || other.idletimeout ||other.bufflen||other.budget||other.queuelen||strlen(other.showlog)!= 0||strlen(other.oneclient) != 0 ||other.switchtime)
+	if(other.batch || other.idletimeout || other.budget|| other.switchtime  || other.queuelen ||
+	 	strlen(other.showlog)|| strlen(other.oneclient)||strlen(other.isolate)||
+		strlen(other.simpleroute)||strlen(other.compress))
 	{
 		if(nw_other_set(dev,&other) < 0)
 			return -1;
@@ -702,8 +755,7 @@ int nw_dev_set(int argc, char **argv)
 	}else if(set_ping[0] == false && set_ping[1] == false)
 	{
 		//do nothing
-	}
-	else{
+	}else{
 		fprintf(stderr,"Both interval and timeout should be set.\n");
 		return -1;
 	}
@@ -767,7 +819,7 @@ int nw_dev_connect(int argc, char **argv)
 			if(strcmp(*argv,"dev") == 0 )
 				NEXT_ARG();
 			if(dev)
-				duparg2("dev",*argv);
+				duparg2(dev,*argv);
 			if(check_ifname(*argv) )
 			{
 				invarg("Invalid dev.\n",*argv);
@@ -854,7 +906,7 @@ static bool is_other(bool other[],size_t size)
 static void other_print(struct nw_other *other,bool is_other[],size_t size)
 {
 	if(is_other[0])
-		fprintf(stdout,"bufflen     \t%dK   \n",other->bufflen);
+		//fprintf(stdout,"bufflen     \t%dK   \n",other->bufflen);
 	if(is_other[1])
 		fprintf(stdout,"budget 		\t%d    \n",other->budget);
 	if(is_other[2])
@@ -877,18 +929,18 @@ static void ping_print(struct nw_ping *ping,bool is_ping[])
 	if(is_ping[1])
 		fprintf(stdout,"timeout    \t%dms   \n",ping->timeout);
 }
-static void peer_print(struct nw_peer_entry *entry,char *id)
+static void peer_print(struct nw_peer_entry *entry,char *id,int idlen)
 {
+	char ipv4[16];
+	int i;
 	if(entry->head.type == NW_OPER_PEER )
 	{
-		char ipv4[16];
-		int i;
 		for(i = 0 ; i < entry->count ; i++)
 		{
 			if(strcmp(entry->peerid[i],id) == 0)
 			{
 					inet_ntop(AF_INET,&entry->ip[i],ipv4,16);
-					fprintf(stdout," %-5d\t%-5s\t%-16s%-10u\n",i+1,entry->peerid[i],ipv4,entry->port[i]);
+					fprintf(stdout,"%-4d%-*s  %-15s   %-5u\n",i+1,idlen,entry->peerid[i],ipv4,entry->port[i]);
 			}
 		}
 	}

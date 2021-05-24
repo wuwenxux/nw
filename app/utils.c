@@ -155,7 +155,7 @@ void duparg(const char *key, const char *arg)
 void duparg2(const char *key, const char *arg)
 {
 	fprintf(stderr,
-		"Error:  \"%s\" is a not a parameter of dev %s.\n",
+		"Error:  \"%s\" is a not a parameter of %s.\n",
 		arg,key);
 	return;
 }

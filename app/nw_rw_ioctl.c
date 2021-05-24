@@ -171,14 +171,7 @@ int nw_ioctl(struct nw_oper_head *head)
 	}
 	close(sock);
 	return !head->result;
-/*
-Failed:
-	close(sock);
-	return -1;
-Success:
-	close(sock);
-	return !head->result;
-*/}
+}
 int nw_search_if( char *dev)
 {
 	FILE *fp;
@@ -235,14 +228,13 @@ void do_read(struct nw_oper_head *head)
 		for(i = 0 ; i < entry->count ; i++)
 		{
 			maxid = maxid > strlen(entry->peerid[i]) ? maxid : strlen(entry->peerid[i]);
-			//printf("max %d\n",maxid);
 		}
-		fprintf(stdout,"No. id%-*sIP%-*s Port%-*s \n",maxid," ",16," ",5," ");
+		fprintf(stdout,"No. Id%-*sIP%-*sPort%-*s \n",maxid," ",15," ",5," ");
 		for(i = 0 ; i < entry->count ; i++)
 		{
 			//max = max > strlen(entry->peerid[i]) ? max : strlen(entry->peerid[i]);
 			inet_ntop(AF_INET,&entry->ip[i],ipv4,16);
-			fprintf(stdout,"%-4d%-*s  %-16s   %-5u\n",i+1,maxid,entry->peerid[i],ipv4,entry->port[i]);
+			fprintf(stdout,"%-4d%-*s  %-15s  %-5u\n",i+1,maxid,entry->peerid[i],ipv4,entry->port[i]);
 			//printf("max %d\n",max);
 		}
 	}else if(head->type == NW_OPER_TYPE)
@@ -269,14 +261,18 @@ void do_read(struct nw_oper_head *head)
 	else if(head->type == NW_OPER_OTHER )
 	{
 		struct nw_other *other = (struct nw_other *)head;
-		fprintf(stdout,"bufflen    \t%dK    \n",other->bufflen);
-		fprintf(stdout,"budget 	   \t%d    \n",other->budget);
-		fprintf(stdout,"oneclient  \t%s    \n",strcmp(other->oneclient,"yes")== 0?"yes":"no");
-		fprintf(stdout,"log   	   \t%s    \n",strcmp(other->showlog,"yes") ==0?"yes":"no");
-		fprintf(stdout,"queuelen   \t%d    \n",other->queuelen);
-		fprintf(stdout,"idletimeout\t%ds    \n",other->idletimeout);
-		fprintf(stdout,"batch      \t%d   \n",other->batch?other->batch:0);
-		fprintf(stdout,"switchtime \t%ds	  \n",other->switchtime);
+		//fprintf(stdout,"bufflen    \t%dK    \n",other->bufflen);
+		fprintf(stdout,"budget		\t%d    \n",other->budget);
+		fprintf(stdout,"oneclient	\t%s    \n",strcmp(other->oneclient,"yes")== 0?"yes":"no");
+		fprintf(stdout,"log			\t%s    \n",strcmp(other->showlog,"yes") ==0?"yes":"no");
+		fprintf(stdout,"compress	\t%s	\n",strcmp(other->compress,"yes") ==0?"yes":"no");
+		fprintf(stdout,"simpleroute	\t%s	\n",strcmp(other->simpleroute,"yes") ==0?"yes":"no");
+		fprintf(stdout,"autopeer	\t%s 	\n",strcmp(other->autopeer,"yes") == 0 ?"yes":"no");
+		fprintf(stdout,"isolate		\t%s 	\n",strcmp(other->isolate,"yes") == 0 ?"yes":"no");
+		fprintf(stdout,"queuelen	\t%d    \n",other->queuelen);
+		fprintf(stdout,"idletimeout	\t%ds   \n",other->idletimeout);
+		//fprintf(stdout,"batch      \t%d   \n",other->batch?other->batch:0);
+		fprintf(stdout,"switchtime 	\t%ds	\n",other->switchtime);
 	}else if(head->type == NW_OPER_SELF)
 	{
 		struct nw_self *self = (struct nw_self *) head;

@@ -99,16 +99,27 @@ struct nw_other
 {
 	struct nw_oper_head head;
 	//设置的时候，下面某个参数值为0，就是忽略该参数。只设置非0值的参数。
-	u32 bufflen;
-	u32 budget;
-	u32 queuelen;
+	u32  bufflen;	//discarded
+	u32  budget;	//discarded
+	u32  queuelen; 
 	char oneclient[4];			//参数值，yes/no
 	char showlog[4];			//参数值，yes/no
-	u32 batch;
-	u32 idletimeout;			//单位秒
-	u32 switchtime;				//单位秒
+	u32  batch;					//discarded
+	u32  idletimeout;			//单位秒
+	u32  switchtime;			//单位秒
+	char autopeer[4];			//参数值，yes/no
+	char isolate[4];			//参数值，yes/no
+	char compress[4];			//参数值，yes/no
+	char simpleroute[4];		//参数值，yes/no
 };
-
+struct nw_dhcp
+{
+	struct nw_oper_head head;//设置的时候，下面某个参数值为0，就是忽略该参数。只设置非0值的参数。
+	char enable[4];			//是否启用DHCP服务。参数值，yes/no
+	u32 startip;			//分配IP范围的开始数值
+	u32 endip;				//分配IP范围的结束数值
+	u32 mask;				//分配IP地址的掩码
+};
 struct nw_self
 {
 	struct nw_oper_head head;
@@ -118,7 +129,7 @@ struct nw_self
 struct nw_dev_stat
 {
 	struct nw_oper_head head;
-	u32 up;			//0-down，1-up
+	u32 up;					//0-down，1-up
 	u64 sendpackets;
 	u64 senddrops;
 	u64 senderrors;

@@ -19,6 +19,8 @@
         "type_traits": "c",
         "utility": "c",
         "nw_cli.h": "c",
-        "manage.h": "c"
+        "manage.h": "c",
+        "*.tcc": "c",
+        "limits": "c"
     }
 }
