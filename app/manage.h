@@ -29,6 +29,7 @@
 #define NW_OPER_OTHER		0x06		//其它参数
 #define NW_OPER_SELF		0x07		//本端的peerid
 #define NW_OPER_DEVSTAT		0x08		//网卡统计数据
+#define NW_OPER_DHCP		0x09		//DHCP参数
 
 #define NW_COMM_READ			0		//读取参数
 #define NW_COMM_SET				1		//设置参数

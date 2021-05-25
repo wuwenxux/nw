@@ -60,9 +60,11 @@ int nw_ping_read(const  char *dev, struct nw_ping *ping);
 int nw_self_read(const  char *dev, struct nw_self *self);
 int nw_self_set(const   char *dev, struct nw_self *self);
 int nw_other_set(const  char *dev, struct nw_other *other);
-int nw_type_set(const   char *dev,  struct nw_type *type);
-int nw_ping_set(const   char *dev,  struct nw_ping *ping);
-int nw_bind_set(const   char *dev,  struct nw_bind *bind);
+int nw_type_set(const   char *dev, struct nw_type *type);
+int nw_ping_set(const   char *dev, struct nw_ping *ping);
+int nw_bind_set(const   char *dev, struct nw_bind *bind);
+int nw_dhcp_set(const 	char *dev, struct nw_dhcp *dchp);
+int nw_dhcp_read(const 	char *dev, struct nw_dhcp *dhcp);
 
 
 /*peer*/

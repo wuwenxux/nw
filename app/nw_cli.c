@@ -185,10 +185,10 @@ int main(int argc,char *argv[])
 		{
 			return nw_dev_show(argc-1,argv+1);
 		}
-		else if(matches(*argv,"connect") == 0||matches(*argv,"conn")== 0)
+		/*else if(matches(*argv,"connect") == 0||matches(*argv,"conn")== 0)
 		{
 			return nw_dev_connect(argc-1,argv+1);
-		}
+		}*/
 		else if(matches(*argv,"load") == 0)
 		{
 			if( NEXT_ARG_OK())
@@ -507,6 +507,7 @@ int nw_dev_set(int argc, char **argv)
 	struct nw_type mo;
 	struct nw_ping ping;
 	struct nw_self self;
+	struct nw_dhcp dhcp;
 	bool set_ping[2] = {false};
 	bool set_mptcp = false;
 	char *dev = NULL;
@@ -517,170 +518,320 @@ int nw_dev_set(int argc, char **argv)
 	memset(&mo,0,sizeof(struct nw_type));
 	memset(&ping,0,sizeof(struct nw_ping));
 	memset(&self,0,sizeof(struct nw_self));
+	memset(&dhcp,0,sizeof(struct nw_dhcp));
 
 	while(argc > 0)
 	{
 		if(matches(*argv,"budget") == 0 || matches(*argv,"maxblen") == 0)//other.budget
 		{
-			NEXT_ARG();
-			if(get_unsigned32(&other.budget,*argv,0))
+			if(NEXT_ARG_OK())
 			{
-				invarg("invalid \"budget\" value,is supposed to be divided by 64.\n",*argv);
+				NEXT_ARG();
+				if(get_unsigned32(&other.budget,*argv,0))
+				{
+					invarg("invalid \"budget\" value,is supposed to be divided by 64.\n",*argv);
+					return -1;
+				}
+			}else
+			{
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
 				return -1;
 			}
 		}else if(matches(*argv,"queuelen") == 0|| matches(*argv,"qlen") == 0)//other.queuelen
 		{
-			NEXT_ARG();
-			if(get_unsigned32(&other.queuelen,*argv,0) || other.queuelen > 1000000 || other.queuelen < 1000)
+			if(NEXT_ARG_OK())
 			{
-				invarg("invalid \"budget\" value,is supposed to be between [1000,1000000].\n",*argv);
-				return -1;		
+				NEXT_ARG();
+				if(get_unsigned32(&other.queuelen,*argv,0) || other.queuelen > 1000000 || other.queuelen < 1000)
+				{
+					invarg("invalid \"budget\" value,is supposed to be between [1000,1000000].\n",*argv);
+					return -1;		
+				}
+			}else
+			{
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
+				return -1;
 			}	
 		}else if(matches(*argv,"oneclient") == 0|| matches(*argv,"onecli") == 0)//other.oneclient
 		{
-			NEXT_ARG();
-			if(strcmp(*argv,"yes") == 0 )
+			if(NEXT_ARG_OK())
 			{
-				strncpy(other.oneclient,"yes",4);
-			}else if(strcmp (*argv, "no") == 0)
-			{
-				strncpy(other.oneclient,"no",3);
+				NEXT_ARG();
+				if(strcmp(*argv,"yes") == 0)
+				{
+					strncpy(other.oneclient,"yes",4);
+				}else if(strcmp (*argv, "no") == 0)
+				{
+					strncpy(other.oneclient,"no",3);
+				}else
+				{
+					return yes_no("oneclient",*argv);
+				}
 			}else
 			{
-				return yes_no("oneclient",*argv);
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
+				return -1;
 			}	
 		}else if(matches(*argv,"log") == 0) //other.showlog
 		{
-			NEXT_ARG();
-			if(strcmp(*argv,"yes") == 0)
-			{
-				strncpy(other.showlog,"yes",4);
-			}else if (strcmp(*argv,"no") == 0)
-			{
-				strncpy(other.showlog,"no",3);
+			if(NEXT_ARG_OK()){
+				NEXT_ARG();
+				if(strcmp(*argv,"yes") == 0)
+				{
+					strncpy(other.showlog,"yes",4);
+				}else if (strcmp(*argv,"no") == 0)
+				{
+					strncpy(other.showlog,"no",3);
+				}else
+				{
+					return yes_no("log",*argv);
+				}
 			}else
 			{
-				return yes_no("log",*argv);
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
+				return -1;
 			}
 		}else if(matches(*argv,"autopeer") == 0) //other.showlog
 		{
-			NEXT_ARG();
-			if(strcmp(*argv,"yes") == 0)
-			{
-				strncpy(other.autopeer,"yes",4);
-			}else if (strcmp(*argv,"no") == 0)
-			{
-				strncpy(other.autopeer,"no",3);
+			if(NEXT_ARG_OK()){
+				NEXT_ARG();
+				if(strcmp(*argv,"yes") == 0)
+				{
+					strncpy(other.autopeer,"yes",4);
+				}else if (strcmp(*argv,"no") == 0)
+				{
+					strncpy(other.autopeer,"no",3);
+				}else
+				{
+					return yes_no("autopeer",*argv);
+				}
 			}else
 			{
-				return yes_no("autopeer",*argv);
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
+				return -1;
 			}
 		}else if(matches(*argv,"isolate") == 0) //other.showlog
 		{
-			NEXT_ARG();
-			if(strcmp(*argv,"yes") == 0)
-			{
-				strncpy(other.isolate,"yes",4);
-			}else if (strcmp(*argv,"no") == 0)
-			{
-				strncpy(other.isolate,"no",3);
-			}else
-			{
-				return yes_no("isolate",*argv);
+			if(NEXT_ARG_OK()){
+				NEXT_ARG();
+				if(strcmp(*argv,"yes") == 0)
+				{
+					strncpy(other.isolate,"yes",4);
+				}else if (strcmp(*argv,"no") == 0)
+				{
+					strncpy(other.isolate,"no",3);
+				}else
+				{
+					return yes_no("isolate",*argv);
+				}
+			}else{
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
+				return -1;
 			}
 		}else if(matches(*argv,"compress") == 0) //other.showlog
 		{
-			NEXT_ARG();
-			if(strcmp(*argv,"yes") == 0)
-			{
-				strncpy(other.compress,"yes",4);
-			}else if (strcmp(*argv,"no") == 0)
-			{
-				strncpy(other.compress,"no",3);
+			if(NEXT_ARG_OK()){
+				NEXT_ARG();
+				if(strcmp(*argv,"yes") == 0)
+				{
+					strncpy(other.compress,"yes",4);
+				}else if (strcmp(*argv,"no") == 0)
+				{
+					strncpy(other.compress,"no",3);
+				}else
+				{
+					return yes_no("compress",*argv);
+				}
 			}else
 			{
-				return yes_no("compress",*argv);
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
+				return -1;
 			}
 		}else if(matches(*argv,"simpleroute") == 0) //other.showlog
 		{
-			NEXT_ARG();
-			if(strcmp(*argv,"yes") == 0)
-			{
-				strncpy(other.simpleroute,"yes",4);
-			}else if (strcmp(*argv,"no") == 0)
-			{
-				strncpy(other.simpleroute,"no",3);
+			if(NEXT_ARG_OK()){
+				NEXT_ARG();
+				if(strcmp(*argv,"yes") == 0)
+				{
+					strncpy(other.simpleroute,"yes",4);
+				}else if (strcmp(*argv,"no") == 0)
+				{
+					strncpy(other.simpleroute,"no",3);
+				}else
+				{
+					return yes_no("simpleroute",*argv);
+				}
 			}else
 			{
-				return yes_no("simpleroute",*argv);
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
+				return -1;
 			}
-		}else if (matches(*argv,"idletimeout") == 0 || matches(*argv,"idle") == 0) //nw_ping
+		}else if (matches(*argv,"idletimeout") == 0 || matches(*argv,"idle") == 0) 
 		{
-			NEXT_ARG();
-			if(get_unsigned32(&other.idletimeout,*argv,0) || other.idletimeout < 30 )
-			{
-				invarg("invalid \"idletimeout\" value,supposed to be greater than 30\n",*argv);
+			if(NEXT_ARG_OK()){
+				NEXT_ARG();
+				if(get_unsigned32(&other.idletimeout,*argv,0) || other.idletimeout < 30 )
+				{
+					invarg("invalid \"idletimeout\" value,supposed to be greater than 30\n",*argv);
+					return -1;
+				}
+			}else{
+				fprintf(stderr,"value of %s is not exist",*argv);
 				return -1;
 			}
 		}else if( matches(*argv,"mode") == 0) //nw_type
 		{
-			NEXT_ARG();
-			if(strcmp(*argv,"client") == 0 )
-			{
-				mo.mode = NW_MODE_CLIENT;
-			}else if (strcmp(*argv,"server") == 0)
-			{
-				mo.mode = NW_MODE_SERVER;
-			}else
-			{
-				return cli_ser("mode",*argv);
+			if(NEXT_ARG_OK()){
+				NEXT_ARG();
+				if(strcmp(*argv,"client") == 0 )
+				{
+					mo.mode = NW_MODE_CLIENT;
+				}else if (strcmp(*argv,"server") == 0)
+				{
+					mo.mode = NW_MODE_SERVER;
+				}else
+				{
+					return cli_ser("mode",*argv);
+				}
+			}else{
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
+				return -1; 
 			}
 		}else if( matches(*argv,"bindport") == 0)   //bind.bindport
 		{
-			NEXT_ARG();
-			if(get_unsigned16(&bind.port,*argv,0))
+			if(NEXT_ARG_OK())
 			{
-				invarg("invalid \"bindport \" value\n",*argv);
+				NEXT_ARG();
+				if(get_unsigned16(&bind.port,*argv,0))
+				{
+					invarg("invalid \"bindport \" value\n",*argv);
+					return -1;
+				}
+			}else
+			{
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
 				return -1;
 			}
 		//tongshi shuru
 		}else if (matches(*argv,"interval") == 0) //ping.interval
 		{
-			NEXT_ARG();
-			if(get_unsigned32(&ping.interval,*argv,0))
+			if(NEXT_ARG_OK())
 			{
-				invarg("invalid \"interval \" value\n",*argv);
+				NEXT_ARG();
+				if(get_unsigned32(&ping.interval,*argv,0))
+				{
+					invarg("invalid \"interval \" value\n",*argv);
+					return -1;
+				}
+				set_ping[0] = true;
+			}else
+			{
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
 				return -1;
 			}
-			set_ping[0] = true;
 		}
 		else if(matches(*argv,"timeout") == 0)//ping.timeout
 		{
-			NEXT_ARG();
-			if(get_unsigned32(&ping.timeout,*argv,0))
+			if(NEXT_ARG_OK())
 			{
-				invarg("Invalid \"timeout \" value\n",*argv);
+				NEXT_ARG();
+				if(get_unsigned32(&ping.timeout,*argv,0))
+				{
+					invarg("Invalid \"timeout \" value\n",*argv);
+					return -1;
+				}
+				set_ping[1] = true;
+			}else
+			{
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
 				return -1;
 			}
-			set_ping[1] = true;
 		}else if(matches(*argv,"ownid") == 0)//nw_self
 		{
-			NEXT_ARG();
-			if(check_self(*argv))
+			if(NEXT_ARG_OK()){
+				NEXT_ARG();
+				if(check_self(*argv))
+				{
+					invarg("invalid \"ownid \" value\n",*argv);
+					return -1;
+				}
+				strcpy(self.peerid,*argv);
+			}else
 			{
-				invarg("invalid \"ownid \" value\n",*argv);
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
 				return -1;
 			}
-			strcpy(self.peerid,*argv);
-		}else if(matches(*argv,"switchtime") == 0)
+		}else if(matches(*argv,"dhcp") == 0) //nw_dhcp
 		{
-			NEXT_ARG();
-			if(get_unsigned32(&other.switchtime,*argv,0))
+			if(NEXT_ARG_OK()){
+				NEXT_ARG();
+				if(strcmp(*argv,"yes") == 0)
+				{
+					strncpy(dhcp.enable,"yes",4);
+				}else if (strcmp(*argv,"no") == 0)
+				{
+					strncpy(dhcp.enable,"no",3);
+				}else
+				{
+					return yes_no("dhcp",*argv);
+				}
+			}else
 			{
-				invarg("invalid \"switchtime \" value\n",*argv);
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
 				return -1;
 			}
-		//	printf("\nswitchtime %u",other.switchtime);
+		}else if(matches(*argv,"dhcp-startip") == 0)
+		{
+			if(NEXT_ARG_OK()){
+				NEXT_ARG();
+				if(check_ipv4(*argv))
+					fprintf(stderr,"Invalid ipv4 addr.\n");
+				inet_pton(AF_INET,*argv,&dhcp.startip);
+			}else
+			{
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
+				return -1;
+			}
+		}else if(matches(*argv,"dhcp-endip") == 0)
+		{
+			if(NEXT_ARG_OK()){
+				NEXT_ARG();
+				if(check_ipv4(*argv))
+					fprintf(stderr,"Invalid ipv4 addr.\n");
+				inet_pton(AF_INET,*argv,&dhcp.endip);
+			}else
+			{
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
+				return -1;
+			}
+		}else if(matches(*argv,"dhcp-mask") == 0)
+		{
+			if(NEXT_ARG_OK())
+			{
+				NEXT_ARG();
+				if(check_netmask(*argv))
+					fprintf(stderr,"Invalid ipv4 mask.\n");
+				inet_pton(AF_INET,*argv,&dhcp.mask);
+			}else
+			{
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
+				return -1;
+			}
+		}
+		else if(matches(*argv,"switchtime") == 0)
+		{
+			if(NEXT_ARG_OK()){
+				NEXT_ARG();
+				if(get_unsigned32(&other.switchtime,*argv,0))
+				{
+					invarg("invalid \"switchtime \" value\n",*argv);
+					return -1;
+				}
+			}else
+			{
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
+				return -1;
+			}
 		}else if (matches(*argv,"multipath") == 0)
 		{
 			if( NEXT_ARG_OK())
@@ -693,8 +844,13 @@ int nw_dev_set(int argc, char **argv)
 					mptcp = false;
 				else
 					return on_off("multipath",*argv);
+			}else
+			{
+				fprintf(stderr,"value of %s is not exist.\n",*argv);
+				return -1;
 			}
-		}else{//head.devname
+		}else
+		{//dev
 			if(strcmp(*argv,"dev") == 0 )
 				NEXT_ARG();
 			else if (strcmp(*argv,"help") == 0)
@@ -723,8 +879,8 @@ int nw_dev_set(int argc, char **argv)
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
 		exit(-1);
 	}
-	if(other.batch || other.idletimeout || other.budget|| other.switchtime  || other.queuelen ||
-	 	strlen(other.showlog)|| strlen(other.oneclient)||strlen(other.isolate)||
+	if(other.batch || other.idletimeout || other.budget|| other.switchtime || other.queuelen ||
+		strlen(other.showlog)|| strlen(other.oneclient)||strlen(other.isolate)||
 		strlen(other.simpleroute)||strlen(other.compress))
 	{
 		if(nw_other_set(dev,&other) < 0)
@@ -769,28 +925,12 @@ int nw_dev_set(int argc, char **argv)
 		if(nw_mptcp_set(dev,mptcp))
 			return -1;
 	}
+	if(strcmp(dhcp.enable,"yes") == 0)
+	{
+		if(nw_dhcp_set(dev,&dhcp))
+			return -1;
+	}
 	printf("Success!\n");
-	return 0 ;
-}
-int nw_mptcp_read(char *dev)
-{
-	char mptcp_cmd[50];
-	sprintf(mptcp_cmd,"ip link show %s|grep -o NOMULTIPATH ",dev);
-	if(system(mptcp_cmd))
-	{
-		return -1;
-	}
-	return 0;
-}
-int nw_mptcp_set(char *dev ,bool on_off)
-{
-	char mptcp_cmd[50];
-	sprintf(mptcp_cmd,"ip link set %s multipath %s",dev,on_off?"on":"off");
-	if(system(mptcp_cmd))
-	{
-		fprintf(stderr,"multipath exec err.");
-		return -1;
-	}
 	return 0;
 }
 //dev DEVICE

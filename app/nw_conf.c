@@ -141,18 +141,19 @@ int nw_load_conf(char *path)
 	struct nw_bind b;
 	struct nw_type t;
 	struct nw_other o;
+	struct nw_dhcp d;
 	struct nw_peer_entry *entry = calloc(1,sizeof(struct nw_peer_entry));	
 	memset(&o,0,sizeof(struct nw_other));
 	memset(&s,0,sizeof(struct nw_self));
 	memset(&b,0,sizeof(struct nw_bind));
 	memset(&t,0,sizeof(struct nw_type));
 	memset(&p,0,sizeof(struct nw_ping));
+	memset(&d,0,sizeof(struct nw_ping));
 	size_t peerIndex=0;
 	int ret;
 	char dev[IF_NAMESIZE];
 	char ipaddr[16];
 	char netmask[16];
-	char log[4];
 	//char ownid[MAX_PEERNAME_LENGTH];
 	bool is_static = false;
 	char peer_id[MAX_PEERNAME_LENGTH];
@@ -211,13 +212,54 @@ int nw_load_conf(char *path)
 				}else if(strcmp(thisOpt->key,"log") == 0)
 				{
 					if(strcmp(thisVal->string,"yes") == 0 || strcmp(thisVal->string,"no") == 0 )
-						strcpy(log,thisVal->string);
+						strcpy(o.showlog,thisVal->string);
 					else
 					{
 						ret = -1;
 						goto RETURN;
 					}
-				}else if(strncmp(thisOpt->key,"peer",4) == 0)
+				}else if(strcmp(thisOpt->key,"autopeer") == 0)
+				{
+					if(strcmp(thisVal->string,"yes") == 0 || strcmp(thisVal->string,"no") == 0)
+					{
+						strcpy(o.autopeer,thisVal->string);
+					}else
+					{
+						ret = -1;
+						goto RETURN;
+					}
+				}else if(strcmp(thisOpt->key,"compress") == 0)
+				{
+					if(strcmp(thisVal->string,"yes") == 0 || strcmp(thisVal->string,"no") == 0)
+					{
+						strcpy(o.compress,thisVal->string);
+					}else
+					{
+						ret = -1;
+						goto RETURN;
+					}
+				}else if(strcmp(thisOpt->key,"simpleroute") == 0)
+				{
+					if(strcmp(thisVal->string,"yes") == 0 || strcmp(thisVal->string,"no") == 0)
+					{
+						strcpy(o.simpleroute,thisVal->string);
+					}else
+					{
+						ret = -1;
+						goto RETURN;
+					}
+				}else if (strcmp(thisOpt->key,"isolate") == 0)
+				{
+					if(strcmp(thisVal->string,"yes") == 0 || strcmp(thisVal->string,"no") == 0)
+					{
+						strcpy(o.isolate,thisVal->string);
+					}else
+					{
+						ret = -1;
+						goto RETURN;
+					}
+				}
+				else if(strncmp(thisOpt->key,"peer",4) == 0)
 				{
 					if(check_opt_peer(dev,thisVal->string,peer_id,&peer_ip,&peer_port))
 					{
@@ -229,17 +271,7 @@ int nw_load_conf(char *path)
 					entry->ip[peerIndex] = peer_ip;
 					entry->port[peerIndex] = peer_port;
 					peerIndex++;
-				}/*else if(strcmp(thisOpt->key,"bufflen") == 0)
-				{
-					assert(thisVal->string != NULL);
-					if(get_unsigned32(&o.bufflen,thisVal->string,10))
-					{	
-						fprintf(stderr,"\'%s\' param \'%s\' :not a valid nw bufflen value\n.",thisConf->name ,thisOpt->key);
-						ret = -1;
-						goto RETURN;
-					}
-				}*/
-				else if(strcmp(thisOpt->key,"budget") == 0)
+				}else if(strcmp(thisOpt->key,"budget") == 0)
 				{
 					assert(thisVal->string != NULL);
 					if(get_unsigned32(&o.budget,thisVal->string,10))
@@ -248,8 +280,7 @@ int nw_load_conf(char *path)
 						ret = -1;
 						goto RETURN;
 					}
-				}
-				else if(strcmp(thisOpt->key,"oneclient")== 0)
+				}else if(strcmp(thisOpt->key,"oneclient")== 0)
 				{
 					if(find_value(thisOpt,"yes") == 0 ||find_value(thisOpt,"no") == 0)
 					{
@@ -261,8 +292,7 @@ int nw_load_conf(char *path)
 						ret = -1;
 						goto RETURN;
 					}
-				}
-				else if(strcmp(thisOpt->key,"queuelen") == 0)
+				}else if(strcmp(thisOpt->key,"queuelen") == 0)
 				{
 					if(get_unsigned32(&o.queuelen,thisVal->string,10))
 					{
@@ -270,8 +300,7 @@ int nw_load_conf(char *path)
 						ret = -1;
 						goto RETURN;
 					}
-				}
-				else if(strcmp(thisOpt->key,"idletimeout")==0)
+				}else if(strcmp(thisOpt->key,"idletimeout")==0)
 				{
 					if(get_unsigned32(&o.idletimeout,thisVal->string,10))
 					{
@@ -279,16 +308,7 @@ int nw_load_conf(char *path)
 						ret = -1;
 						goto RETURN;
 					}
-				}/*else if(strcmp(thisOpt->key,"batch") == 0)
-				{
-					if(get_unsigned32(&o.batch,thisVal->string,10))
-					{
-						fprintf(stderr,"\'%s\' param \'%s\':invalid batch value.\n",thisConf->name,thisOpt->key);
-						ret = -1;
-						goto RETURN;
-					}
-				}*/
-				else if(strcmp(thisOpt->key,"swtichtimeout") ==0)
+				}else if(strcmp(thisOpt->key,"swtichtimeout") ==0)
 				{
 					assert(get_unsigned32(&o.switchtime,thisVal->string,10)==0);
 					if(get_unsigned32(&o.switchtime,thisVal->string,10))
@@ -351,7 +371,7 @@ int nw_load_conf(char *path)
 		if(check_ipv4(ipaddr) || check_netmask(netmask))
 		{
 			ret = -1;
-			fprintf(stderr,"dev %s: %s or %s is invalid.\n",dev,ipaddr,netmask);
+			fprintf(stderr,"dev %s: %s or %s is wrong, param error.\n",dev,ipaddr,netmask);
 			goto RETURN;
 		}
 		if((ret = nw_setup_dev(dev,ipaddr,netmask)))
@@ -393,12 +413,6 @@ int nw_load_conf(char *path)
 			if((ret = nw_type_set(dev,&t)))
 				goto RETURN;
 		}
-		if(strlen(log)>0)
-		{
-			strcpy(o.showlog,log);
-			if((ret =nw_other_set(dev,&o)))
-				goto RETURN;
-		}
 		if(peerIndex)
 		{
 			entry->count = peerIndex;
@@ -414,10 +428,10 @@ int nw_load_conf(char *path)
 		memset(&b,0,sizeof(struct nw_bind));
 		memset(&t,0,sizeof(struct nw_type));
 		memset(&p,0,sizeof(struct nw_ping));
+		memset(&d,0,sizeof(struct nw_dhcp));
 		ping_set[0] = false;
 		ping_set[1] = false;
 		set_mptcp = false;
-		strcpy(log,"no");
 		peerIndex = 0;
 		thisConf = thisConf->next;
 	}

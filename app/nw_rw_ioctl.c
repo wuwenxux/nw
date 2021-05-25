@@ -8,6 +8,8 @@
 int nw_do_connect(const char *dev, struct nw_peer_entry *entry)
 {
 	int ret;
+	assert(dev != NULL);
+	assert(entry != NULL);
 	strcpy(entry->head.devname,dev);
 	entry->head.command = NW_COMM_SET;
 	entry->head.type = NW_COMM_PEER_CONNECT;
@@ -18,6 +20,8 @@ int nw_do_connect(const char *dev, struct nw_peer_entry *entry)
 int nw_do_peer_list(const char *dev ,struct nw_peer_entry *entry)
 {
 	int ret;
+	assert(dev != NULL);
+	assert(entry != NULL);
 	strcpy(entry->head.devname,dev);
 	entry->head.command = NW_COMM_PEER_LIST;
 	entry->head.type = NW_OPER_PEER;
@@ -28,6 +32,8 @@ int nw_do_peer_list(const char *dev ,struct nw_peer_entry *entry)
 int nw_do_add(const char *dev,struct nw_peer_entry *npe)
 {
 	int ret;
+	assert(dev != NULL);
+	assert(npe != NULL);
 	strncpy(npe->head.devname,dev,IFNAMSIZ);
 	npe->head.command =  NW_COMM_PEER_ADD;
 	npe->head.type = NW_OPER_PEER;
@@ -38,6 +44,8 @@ int nw_do_add(const char *dev,struct nw_peer_entry *npe)
 int nw_do_change(const char *dev,struct nw_peer_entry *npe)
 {
 	int ret;
+	assert(dev != NULL);
+	assert(npe != NULL);
 	strncpy(npe->head.devname,dev,IFNAMSIZ);
 	npe->count = 1;
 	npe->head.command = NW_COMM_PEER_CHANGE;
@@ -49,6 +57,8 @@ int nw_do_change(const char *dev,struct nw_peer_entry *npe)
 int nw_do_del(const char *dev,struct nw_peer_entry *npe)
 {
 	int ret;
+	assert(dev != NULL);
+	assert(npe != NULL);
 	strncpy(npe->head.devname,dev,IFNAMSIZ);
 	npe->head.command = NW_COMM_PEER_DEL;
 	npe->head.type = NW_OPER_PEER;
@@ -59,10 +69,8 @@ int nw_do_del(const char *dev,struct nw_peer_entry *npe)
 int nw_ping_read(const char *dev ,struct nw_ping *ping)
 {
 	int ret;
-	if(ping == NULL)
-		return -1;
-	if(dev == NULL)
-		return DEV_NOT_FOUND;
+	assert(dev != NULL);
+	assert(ping != NULL);
 	strcpy(ping->head.devname,dev);
 	ping->head.type = NW_OPER_PING;
 	ping->head.command = NW_COMM_READ;
@@ -72,6 +80,8 @@ int nw_ping_read(const char *dev ,struct nw_ping *ping)
 int nw_other_read(const char *dev,struct nw_other* other)
 {	
 	int ret ;
+	assert(dev != NULL);
+	assert(other != NULL);
 	strncpy(other->head.devname,dev,IFNAMSIZ);
 	other->head.type = NW_OPER_OTHER;
 	other->head.command = NW_COMM_READ;
@@ -81,6 +91,8 @@ int nw_other_read(const char *dev,struct nw_other* other)
 int nw_bind_read(const char *dev,struct nw_bind* bind)
 {	
 	int ret ;
+	assert(dev != NULL);
+	assert(bind != NULL);
 	strncpy(bind->head.devname,dev,IFNAMSIZ);
 	bind->head.type = NW_OPER_BIND;
 	bind->head.command = NW_COMM_READ;
@@ -90,6 +102,8 @@ int nw_bind_read(const char *dev,struct nw_bind* bind)
 int nw_type_read(const char *dev, struct nw_type* type)
 {
 	int ret;
+	assert(dev != NULL);
+	assert(type != NULL);
 	strncpy(type->head.devname,dev,IFNAMSIZ);
 	type->head.type = NW_OPER_TYPE;
 	type->head.command = NW_COMM_READ;
@@ -99,6 +113,8 @@ int nw_type_read(const char *dev, struct nw_type* type)
 int nw_self_read(const char *dev, struct nw_self*self)
 {
 	int ret;
+	assert(dev != NULL);
+	assert(self != NULL);
 	strncpy(self->head.devname,dev,IFNAMSIZ);
 	self->head.type = NW_OPER_SELF;
 	self->head.command = NW_COMM_READ;
@@ -109,6 +125,8 @@ int nw_self_read(const char *dev, struct nw_self*self)
 int nw_other_set(const char *dev,struct nw_other* other)
 {
 	int ret ;
+	assert(dev != NULL);
+	assert(other != NULL);
 	strncpy(other->head.devname,dev,IFNAMSIZ);
 	other->head.type = NW_OPER_OTHER;
 	other->head.command = NW_COMM_SET;
@@ -118,6 +136,8 @@ int nw_other_set(const char *dev,struct nw_other* other)
 int nw_bind_set(const char *dev, struct nw_bind* bind)
 {	
 	int ret ;
+	assert(dev != NULL);
+	assert(bind != NULL);
 	strcpy(bind->head.devname,dev);
 	bind->head.type = NW_OPER_BIND;
 	bind->head.command = NW_COMM_SET;
@@ -127,6 +147,8 @@ int nw_bind_set(const char *dev, struct nw_bind* bind)
 int nw_type_set(const char *dev, struct nw_type* mo)
 {
 	int ret; 
+	assert(dev != NULL);
+	assert(mo != NULL);
 	strcpy(mo->head.devname,dev);
 	mo->head.type = NW_OPER_TYPE;
 	mo->head.command = NW_COMM_SET;
@@ -136,6 +158,8 @@ int nw_type_set(const char *dev, struct nw_type* mo)
 int nw_ping_set(const char *dev, struct nw_ping *ping)
 {
 	int ret;
+	assert(dev != NULL);
+	assert(ping != NULL);
 	strcpy(ping->head.devname,dev);
 	ping->head.type = NW_OPER_PING;
 	ping->head.command = NW_COMM_SET;
@@ -145,11 +169,57 @@ int nw_ping_set(const char *dev, struct nw_ping *ping)
 int nw_self_set(const char *dev, struct nw_self*self)
 {
 	int ret;
+	assert(dev != NULL);
+	assert(self != NULL);
 	strncpy(self->head.devname,dev,IFNAMSIZ);
 	self->head.type = NW_OPER_SELF;
 	self->head.command = NW_COMM_SET;
 	ret = nw_ioctl(&self->head);
 	return ret;
+}
+int nw_dhcp_set(const char *dev,struct nw_dhcp *dhcp)
+{
+	int ret; 
+	assert(dev != NULL);
+	assert(dhcp != NULL);
+	strncpy(dhcp->head.devname,dev,IFNAMSIZ);
+	dhcp->head.type = NW_OPER_DHCP;
+	dhcp->head.command = NW_COMM_SET;
+	ret = nw_ioctl(&dhcp->head);
+	return ret;
+}
+int nw_dhcp_read(const char *dev,struct nw_dhcp *dhcp)
+{
+	int ret; 
+	assert(dev != NULL);
+	assert(dhcp != NULL);
+	strncpy(dhcp->head.devname,dev,IFNAMSIZ);
+	dhcp->head.type = NW_OPER_DHCP;
+	dhcp->head.command = NW_COMM_READ;
+	ret = nw_ioctl(&dhcp->head);
+	return ret;
+}
+
+int nw_mptcp_read(char *dev)
+{
+	char mptcp_cmd[50];
+	sprintf(mptcp_cmd,"ip link show %s|grep -o NOMULTIPATH ",dev);
+	if(system(mptcp_cmd))
+	{
+		return -1;
+	}
+	return 0;
+}
+int nw_mptcp_set(char *dev ,bool on_off)
+{
+	char mptcp_cmd[50];
+	sprintf(mptcp_cmd,"ip link set %s multipath %s",dev,on_off?"on":"off");
+	if(system(mptcp_cmd))
+	{
+		fprintf(stderr,"multipath exec err.");
+		return -1;
+	}
+	return 0;
 }
 int nw_ioctl(struct nw_oper_head *head)
 {
@@ -162,6 +232,7 @@ int nw_ioctl(struct nw_oper_head *head)
 	sock = socket(AF_INET,SOCK_DGRAM,0);
     if(!sock)
     {
+		fprintf(stderr,"[%s] param error",__FUNCTION__);
         return -1;
     }
     ret = ioctl(sock,NW_OPER,&req);
@@ -261,7 +332,6 @@ void do_read(struct nw_oper_head *head)
 	else if(head->type == NW_OPER_OTHER )
 	{
 		struct nw_other *other = (struct nw_other *)head;
-		//fprintf(stdout,"bufflen    \t%dK    \n",other->bufflen);
 		fprintf(stdout,"budget		\t%d    \n",other->budget);
 		fprintf(stdout,"oneclient	\t%s    \n",strcmp(other->oneclient,"yes")== 0?"yes":"no");
 		fprintf(stdout,"log			\t%s    \n",strcmp(other->showlog,"yes") ==0?"yes":"no");
@@ -271,7 +341,6 @@ void do_read(struct nw_oper_head *head)
 		fprintf(stdout,"isolate		\t%s 	\n",strcmp(other->isolate,"yes") == 0 ?"yes":"no");
 		fprintf(stdout,"queuelen	\t%d    \n",other->queuelen);
 		fprintf(stdout,"idletimeout	\t%ds   \n",other->idletimeout);
-		//fprintf(stdout,"batch      \t%d   \n",other->batch?other->batch:0);
 		fprintf(stdout,"switchtime 	\t%ds	\n",other->switchtime);
 	}else if(head->type == NW_OPER_SELF)
 	{
