@@ -291,6 +291,9 @@ void do_read(struct nw_oper_head *head)
 {	
 	struct nw_peer_entry *entry = (struct nw_peer_entry *) head;
 	char ipv4[16];
+	char start[16];
+	char end[16];
+	char mask[16];
 	//int max=0;
 	int i;
 	int maxid = 0;
@@ -311,30 +314,30 @@ void do_read(struct nw_oper_head *head)
 	}else if(head->type == NW_OPER_TYPE)
 	{
 		struct nw_type *type = (struct nw_type *)head;
-		fprintf(stdout,"mode       \t%s   \n",mode_str(type->mode));
+		fprintf(stdout,"mode       	\t%s	\n",mode_str(type->mode));
 	}else if(head->type == NW_OPER_BIND)
 	{
 		struct nw_bind *bind = (struct nw_bind *) head;
-		fprintf(stdout,"bindport   \t%d   \n",bind->port);
+		fprintf(stdout,"bindport	\t%d   	\n",bind->port);
 	}else if (head->type == NW_OPER_PING)
 	{
 		struct nw_ping *ping = (struct nw_ping *)head;
-		fprintf(stdout,"interval   \t%dms   \n",ping->interval);
-		fprintf(stdout,"timeout    \t%dms   \n",ping->timeout);
+		fprintf(stdout,"interval	\t%dms	\n",ping->interval);
+		fprintf(stdout,"timeout		\t%dms	\n",ping->timeout);
 	}else if(head->type == NW_OPER_DEVSTAT)
 	{
 		char *dev = NULL;
 		int ret ;
 		ret = nw_search_if(dev);
 		if(ret)
-			fprintf(stderr,"dev not found.");
+			fprintf(stderr,"dev not found.\n");
 	}
 	else if(head->type == NW_OPER_OTHER )
 	{
 		struct nw_other *other = (struct nw_other *)head;
-		fprintf(stdout,"budget		\t%d    \n",other->budget);
-		fprintf(stdout,"oneclient	\t%s    \n",strcmp(other->oneclient,"yes")== 0?"yes":"no");
-		fprintf(stdout,"log			\t%s    \n",strcmp(other->showlog,"yes") ==0?"yes":"no");
+		fprintf(stdout,"budget		\t%d	\n",other->budget);
+		fprintf(stdout,"oneclient	\t%s	\n",strcmp(other->oneclient,"yes")== 0?"yes":"no");
+		fprintf(stdout,"log		\t%s    \n",strcmp(other->showlog,"yes") ==0?"yes":"no");
 		fprintf(stdout,"compress	\t%s	\n",strcmp(other->compress,"yes") ==0?"yes":"no");
 		fprintf(stdout,"simpleroute	\t%s	\n",strcmp(other->simpleroute,"yes") ==0?"yes":"no");
 		fprintf(stdout,"autopeer	\t%s 	\n",strcmp(other->autopeer,"yes") == 0 ?"yes":"no");
@@ -345,7 +348,17 @@ void do_read(struct nw_oper_head *head)
 	}else if(head->type == NW_OPER_SELF)
 	{
 		struct nw_self *self = (struct nw_self *) head;
-		fprintf(stdout,"ownid	   \t%-10s	  \n",self->peerid);
+		fprintf(stdout,"ownid	   	\t%s	  \n",strlen(self->peerid)?self->peerid:"None");
+	}else if(head->type == NW_OPER_DHCP)
+	{
+		struct nw_dhcp *dhcp =(struct nw_dhcp *)head;
+		inet_ntop(AF_INET,&dhcp->startip,start,16);
+		inet_ntop(AF_INET,&dhcp->endip,end,16);
+		inet_ntop(AF_INET,&dhcp->mask,mask,16);
+		fprintf(stdout,"dhcp		\t%s		\n",strcmp(dhcp->enable,"yes")== 0 ?"yes":"no");
+		fprintf(stdout,"dhcp-startip	\t%-16s		\n",start);
+		fprintf(stdout,"dhcp-endip	\t%-16s		\n",end);
+		fprintf(stdout,"dhcp-mask	\t%-16s		\n",mask);
 	}
 	return ;
 }

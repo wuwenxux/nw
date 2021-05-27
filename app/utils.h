@@ -106,7 +106,7 @@ int check_nw_if(const char *dev);
 /**
  * To confirm whether multipath is supported by dev
  * Note: dev should be a effective name ,otherwise  DEVERR , CMDERR,-1 returned.
- * Return: 0 SUCCESS, DEVERR, CMDERR, -1 FAILED
+ * Return: 0 SUCCESS else DEVERR, CMDERR, -1 FAILED
  * @dev:name of the device ,which can be found by ip link.
  **/
 int nw_mptcp(const char *dev);

@@ -100,8 +100,7 @@ struct nw_other
 {
 	struct nw_oper_head head;
 	//设置的时候，下面某个参数值为0，就是忽略该参数。只设置非0值的参数。
-	u32  bufflen;	//discarded
-	u32  budget;	//discarded
+	u32  budget;	
 	u32  queuelen; 
 	char oneclient[4];			//参数值，yes/no
 	char showlog[4];			//参数值，yes/no

@@ -247,8 +247,7 @@ int nw_peer_add(int argc, char ** argv)
 	char *id = NULL;
 	char ip[16];
 	u16 port;
-
-	if (argc < 7  || argc > 8)
+	if (argc !=  7  || argc != 8 )
 	{
 		fprintf(stderr,"argus are not enough.\n");
 		goto FAILED;

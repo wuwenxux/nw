@@ -129,6 +129,18 @@ EXIT:
     fclose(confFile);
 	return file;
 }
+int nw_reload_conf(struct nw_file *file, struct nw_config *conf)
+{
+	/*
+	struct nw_file *file = NULL;
+	struct nw_config *thisConf = NULL;
+	struct nw_option *thisOpt = NULL;
+	struct nw_value *thisVal = NULL;
+	char *dev = NULL;
+	fprintf(stdout,"Loading new config...\n");*/
+	//if((file = file_open(path))== NULL)
+	return 0;
+}
 int nw_load_conf(char *path)
 {
 	struct nw_file *file  = NULL;
@@ -198,7 +210,7 @@ int nw_load_conf(char *path)
 						t.mode = NW_MODE_SERVER;
 					else
 					{
-						ret =cli_ser(thisOpt->key,thisVal->string);
+						ret = cli_ser(thisOpt->key,thisVal->string);
 						goto RETURN;
 					}
 				}else if(strcmp(thisOpt->key,"bindport")== 0)
@@ -345,18 +357,74 @@ int nw_load_conf(char *path)
 					strcpy(s.peerid,thisVal->string);
 				}else if(strcmp(thisOpt->key,"multipath") == 0 || strcmp(thisOpt->key,"mptcp") == 0)
 				{
-					 if(strcmp(thisVal->string,"on") == 0)
+					if(strcmp(thisVal->string,"on") == 0)
 					{
 						set_mptcp = true;
 					}
 					else if(strcmp(thisVal->string,"off") == 0)
 					{ 
-						set_mptcp =false;
+						set_mptcp = false;
 					}else 
 					{
 						ret = on_off("multipath",thisVal->string);
 						goto RETURN;
 					}
+				}else if(strcmp(thisOpt->key,"dhcp") == 0)
+				{
+					assert(thisVal->string != NULL);
+					printf("%s %s\n",thisOpt->key,thisVal->string);
+					if(strcmp(thisVal->string,"yes") == 0)
+					{
+						strcpy(d.enable,"yes");
+					}else if(strcmp(thisVal->string,"no") == 0)
+					{
+						strcpy(d.enable,"no");
+					}else
+					{
+						ret = yes_no("dhcp",thisVal->string);
+						goto RETURN;
+					}
+				}else if(strcmp(thisOpt->key,"dhcp-startip") == 0)
+				{
+					assert(thisVal->string != NULL);
+					printf("%s %s\n",thisOpt->key,thisVal->string);
+					if((ret = check_ipv4(thisVal->string)))
+					{
+						fprintf(stderr,"%s is not a valid ip addr.",thisVal->string);
+						goto RETURN;
+					}
+					ret = inet_pton(AF_INET,thisVal->string,&d.startip);
+					if(ret < 1)
+					{
+						fprintf(stderr,"%s convert to u32 failure.\n",thisVal->string);
+						goto RETURN;
+					}
+					fprintf(stdout,"%s %u\n",thisOpt->key,d.startip);
+				}else if (strcmp(thisOpt->key,"dhcp-endip") == 0)
+				{
+					assert(thisVal->string != NULL);
+					fprintf(stdout,"%s %s\n",thisOpt->key,thisVal->string);
+					if((ret = check_ipv4(thisVal->string)))
+						goto RETURN;
+					ret = inet_pton(AF_INET,thisVal->string,&d.endip);
+					if(ret < 1)
+					{
+						fprintf(stderr,"%s convert to u32 failure.\n",thisVal->string);
+						goto RETURN;
+					}
+					fprintf(stdout,"%s %u\n",thisOpt->key,d.endip);
+				}else if(strcmp(thisOpt->key,"dhcp-mask") == 0)
+				{
+					assert(thisVal->string != NULL);
+					if((ret = check_netmask(thisVal->string)))
+						goto RETURN;
+					ret = inet_pton(AF_INET,thisVal->string,&d.mask);
+					if(ret < 1)
+					{
+						fprintf(stderr,"%s convert to u32 failure.\n",thisVal->string);
+						goto RETURN;
+					}
+					fprintf(stdout,"%s %u\n",thisOpt->key,d.mask);
 				}
 				thisVal = thisVal->next;
 			}
@@ -379,8 +447,7 @@ int nw_load_conf(char *path)
 			fprintf(stderr,"setup %s failed\n",dev);
 			goto RETURN;
 		}
-		
-		if(o.idletimeout||o.switchtime||o.budget||o.queuelen||
+		if(o.idletimeout||o.switchtime||o.queuelen||
 			strlen(o.oneclient)||strlen(o.showlog)||strlen(o.isolate)||strlen(o.simpleroute)||
 			strlen(o.compress))
 		{
@@ -411,6 +478,11 @@ int nw_load_conf(char *path)
 		if(t.mode)
 		{
 			if((ret = nw_type_set(dev,&t)))
+				goto RETURN;
+		}
+		if(strcmp(d.enable,"yes") == 0 )
+		{
+			if((ret = nw_dhcp_set(dev,&d)))
 				goto RETURN;
 		}
 		if(peerIndex)
@@ -521,6 +593,7 @@ static int nw_save_dev(FILE *fp,const char *dev)
 	struct nw_self  *s = calloc(1,sizeof(struct nw_self));
 	struct nw_ping  *p = calloc(1,sizeof(struct nw_ping));
 	struct nw_type  *t = calloc(1,sizeof(struct nw_type));
+	struct nw_dhcp  *d = calloc(1,sizeof(struct nw_dhcp));
 	struct nw_peer_entry *npe = calloc(1,sizeof(struct nw_peer_entry));
 	if((ret = nw_other_read(dev,o)))
 	{
@@ -540,6 +613,11 @@ static int nw_save_dev(FILE *fp,const char *dev)
 	if((ret = nw_bind_read(dev,b)))
 	{
 		perror("Nw bind info read failure.\n");
+		goto RETURN;
+	}
+	if((ret = nw_dhcp_read(dev,d)))
+	{
+		perror("Nw dhcp info read failure.\n");
 		goto RETURN;
 	}
 	if(npe == NULL)
@@ -585,7 +663,6 @@ static int nw_remove(const char *dev)
 	if(ret)
 		return -1;
 	return 0;
-	
 }
 static void nw_clear()
 {
@@ -903,7 +980,7 @@ static void nw_dev_conf_export(FILE *fp,
 	fprintf(fp,"\toption proto \'static\'\n");
 	fprintf(fp,"\toption ipaddr \'%s\'\n",ip_v4);
 	fprintf(fp,"\toption netmask \'%s\'\n",ip_mask);
-	fprintf(fp,"\toption budget \'%u\'\n",o_ptr->budget);
+	//fprintf(fp,"\toption budget \'%u\'\n",o_ptr->budget);
 	fprintf(fp,"\toption idletimeout \'%u\'\n",o_ptr->idletimeout);
 	fprintf(fp,"\toption oneclient \'%s\'\n",o_ptr->oneclient);
 	fprintf(fp,"\toption autopeer \'%s\'\n",o_ptr->autopeer);

@@ -8,7 +8,7 @@
 #define M 1024*1024
 #define none_of_other !is_other(r_other,sizeof(r_other)/sizeof(r_other[0])) 
 #define neither_of_ping !r_ping[0] && !r_ping[1] 
-#define show_all none_of_other && neither_of_ping && !r_bind && !r_type && !peerid && !peer_list  && !peer_id && !r_self &&!mptcp
+#define show_all none_of_other && neither_of_ping && !r_bind && !r_type && !peerid && !peer_list  && !peer_id && !r_self &&!mptcp&&!r_dhcp
 #define dev_found   !check_nw_if(dev)
 
 static bool is_other(bool other[],size_t);
@@ -44,7 +44,6 @@ void nw_set_usage(void)
 				    "						budget  	MAXBUFLEN\n"
 				    "						queuelen    QUEUELEN\n"
 				    "						idletimeout TIMEVALUE\n"
-					"						batch       BATCH\n"
 					"						switchtime  SWITCHTIME\n"
 					"						bindport 	PORT\n");
 	exit(-1);
@@ -61,7 +60,6 @@ void nw_show_usage(void)
 				    "						idletimeout TIMEVALUE\n"
 					"						oneclient   YES|NO\n"
 					"						showlog     YES|NO\n"
-					"						batch       BATCH\n"
 					"						switchtime  SWITCHTIME\n"
 					"						bindport 	PORT\n");
 	exit(-1);
@@ -94,15 +92,15 @@ void  nw_usage(void)
 			" 	nw set 	  { DEVICE | dev DEVICE }\n"
 			"					 	[ bindport PORTNUM ]|\n"
 			"						[ interval INTERVAL timeout TIMEOUT ]|\n "
-			"						autopeer    YES|NO\n"
-			"						isolate		YES|NO\n"
-			"						compress	YES|NO\n"
-			"						simpleroute YES|NO\n"
+			"						[ autopeer    {yes|no} ]\n"
+			"						[ isolate		{yes|no} ]\n"
+			"						[ compress	{yes|no} ]\n"
+			"						[ simpleroute {yes|no} ]\n"
 			"						[ budget budget ]\n"
 			"						[ queuelen QUEUELEN ]|\n"
 			"						[ oneclient {yes|no} ]|\n"
 			"						[ idletimeout TIMEINTERVAL ]|\n"
-			"						[ log {yes|no} ]\n"
+			"						[ log { yes|no } ]\n"
 			"						[ ownid OWNID ]\n"
 			"						[ switchtime SWITCHTIME]\n"
 			"						[ mode { client | server } ]\n"
@@ -117,26 +115,26 @@ void  nw_usage(void)
 }
 const char *other_str[] =
 {
-	"bufflen",
 	"budget",
 	"queuelen",
 	"oneclient",
 	"showlog",
-	"batch",
 	"idletimeout",
 	"switchtime",
+	"autopeer",
+	"simpleroute",
+	"compress",
+	"isolate",
 	NULL,
 };
 
 
 const char *dev_args_str[] = 
 {
-	"bufflen",
 	"budget",
 	"queuelen",
 	"oneclient",
 	"showlog",
-	"batch",
 	"idletimeout",
 	"switchtime",
 	"interval",
@@ -288,8 +286,7 @@ int nw_stat_dev(int argc, char **argv)
 	printf("\n");
 
 	return 0;
-}
-*/
+}*/
 
 //all args
 //nw show dev nw1
@@ -301,12 +298,13 @@ int nw_dev_show(int argc, char **argv)
 	bool mptcp = false;
 	bool peer_list = false;
 	bool peer_id = false;
-	bool r_other[8] = {false};
+	bool r_other[10] = {false};
 	bool r_type = false;
 	bool r_ping[2]= {false};
 	bool r_bind = false;
 	bool peerid = false;
 	bool r_self = false;
+	bool r_dhcp = false;
 	int idlen;
 	char *tempPeers = NULL;
 	char *cur = NULL;
@@ -315,6 +313,7 @@ int nw_dev_show(int argc, char **argv)
 	struct nw_bind bind;
 	struct nw_ping ping;
 	struct nw_type type;
+	struct nw_dhcp dhcp;
 	struct nw_peer_entry *entry  = calloc(1,sizeof(struct nw_peer_entry));
 	if(entry == NULL)
 		return MEMERR;
@@ -323,15 +322,11 @@ int nw_dev_show(int argc, char **argv)
 	memset(&ping,0,sizeof(struct nw_ping));
 	memset(&bind,0,sizeof(struct nw_bind));
 	memset(&self,0,sizeof(struct nw_self));
+	memset(&dhcp,0,sizeof(struct nw_dhcp));
 	
 	while(argc > 0)
 	{
-		/*
-		if(strcmp(*argv,"bufflen") == 0)
-		{
-			r_other[0] = true;
-		}else */
-		if(strcmp(*argv,"") == 0)
+		if(strcmp(*argv,"compress") == 0)
 		{
 			r_other[0] = true;
 		}else if(strcmp(*argv,"budget") == 0) 
@@ -346,16 +341,23 @@ int nw_dev_show(int argc, char **argv)
 		}else if(strcmp(*argv,"log") == 0 )
 		{
 			r_other[4] = true;
-		}/*else if(strcmp(*argv,"batch") == 0 )
+		}else if(strcmp(*argv,"idletimeout") == 0)
 		{
 			r_other[5] = true;
-		}*/else if(strcmp(*argv,"idletimeout") == 0)
-		{
-			r_other[6] = true;
 		}else if (strcmp(*argv,"switchtime") == 0)
 		{
+			r_other[6] = true;
+		}else if(strcmp(*argv,"autopeer") == 0)
+		{
 			r_other[7] = true;
-		}else if (strcmp(*argv,"bindport") == 0)
+		}else if(strcmp(*argv,"simpleroute") == 0)
+		{
+			r_other[8] = true;
+		}else if(strcmp(*argv,"isolate") == 0)
+		{
+			r_other[9] = true;
+		}
+		else if (strcmp(*argv,"bindport") == 0)
 		{
 			r_bind = true;
 		}else if (strcmp(*argv,"mode") == 0)
@@ -392,7 +394,10 @@ int nw_dev_show(int argc, char **argv)
 		{
 			mptcp = true;
 		}
-		else
+		else if(strcmp(*argv,"dhcp") == 0)
+		{
+			r_dhcp = true;
+		}else
 		{
 			if(strcmp(*argv,"dev") == 0)
 				NEXT_ARG();
@@ -435,7 +440,15 @@ int nw_dev_show(int argc, char **argv)
 		ret = nw_self_read(dev,&self);
 		do_read(&self.head);
 		ret = nw_mptcp(dev);
-		fprintf(stdout,"multipath  \t%-10s    \n",ret== 0?"off":"on");
+		fprintf(stdout,"multipath  	\t%-10s    \n",ret== 0?"off":"on");
+		ret = nw_dhcp_read(dev,&dhcp);
+		if(type.mode == NW_MODE_SERVER)
+		{
+			do_read(&dhcp.head);
+		}else
+		{
+			fprintf(stdout,"dhcp  	\t\t%-10s    \n",dhcp.enable);
+		}
 	}
 	if(is_other(r_other,sizeof(r_other)/sizeof(r_other[0])))
 	{
@@ -490,7 +503,12 @@ int nw_dev_show(int argc, char **argv)
 	if(mptcp)
 	{ 
 		ret = nw_mptcp(dev);
-		fprintf(stdout,"multipath  \t%-10s    \n",ret== true?"yes":"no");
+		fprintf(stdout,"multipath  \t%-10s    \n",ret== 0?"no":"yes");
+	}
+	if(r_dhcp)
+	{
+		ret = nw_dhcp_read(dev,&dhcp);
+		do_read(&dhcp.head);
 	}
 	goto RESULT;
 RESULT:
@@ -591,16 +609,16 @@ int nw_dev_set(int argc, char **argv)
 				fprintf(stderr,"value of %s is not exist.\n",*argv);
 				return -1;
 			}
-		}else if(matches(*argv,"autopeer") == 0) //other.showlog
+		}else if(matches(*argv,"autopeer") == 0) //other.autopeer
 		{
 			if(NEXT_ARG_OK()){
 				NEXT_ARG();
 				if(strcmp(*argv,"yes") == 0)
 				{
-					strncpy(other.autopeer,"yes",4);
+					strcpy(other.autopeer,"yes");
 				}else if (strcmp(*argv,"no") == 0)
 				{
-					strncpy(other.autopeer,"no",3);
+					strcpy(other.autopeer,"no");
 				}else
 				{
 					return yes_no("autopeer",*argv);
@@ -616,10 +634,10 @@ int nw_dev_set(int argc, char **argv)
 				NEXT_ARG();
 				if(strcmp(*argv,"yes") == 0)
 				{
-					strncpy(other.isolate,"yes",4);
+					strcpy(other.isolate,"yes");
 				}else if (strcmp(*argv,"no") == 0)
 				{
-					strncpy(other.isolate,"no",3);
+					strcpy(other.isolate,"no");
 				}else
 				{
 					return yes_no("isolate",*argv);
@@ -634,10 +652,10 @@ int nw_dev_set(int argc, char **argv)
 				NEXT_ARG();
 				if(strcmp(*argv,"yes") == 0)
 				{
-					strncpy(other.compress,"yes",4);
+					strcpy(other.compress,"yes");
 				}else if (strcmp(*argv,"no") == 0)
 				{
-					strncpy(other.compress,"no",3);
+					strcpy(other.compress,"no");
 				}else
 				{
 					return yes_no("compress",*argv);
@@ -653,10 +671,10 @@ int nw_dev_set(int argc, char **argv)
 				NEXT_ARG();
 				if(strcmp(*argv,"yes") == 0)
 				{
-					strncpy(other.simpleroute,"yes",4);
+					strcpy(other.simpleroute,"yes");
 				}else if (strcmp(*argv,"no") == 0)
 				{
-					strncpy(other.simpleroute,"no",3);
+					strcpy(other.simpleroute,"no");
 				}else
 				{
 					return yes_no("simpleroute",*argv);
@@ -879,8 +897,8 @@ int nw_dev_set(int argc, char **argv)
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
 		exit(-1);
 	}
-	if(other.batch || other.idletimeout || other.budget|| other.switchtime || other.queuelen ||
-		strlen(other.showlog)|| strlen(other.oneclient)||strlen(other.isolate)||
+	if(	other.batch || other.idletimeout || other.budget|| other.switchtime || other.queuelen ||
+		strlen(other.showlog)|| strlen(other.oneclient)||strlen(other.isolate)||strlen(other.autopeer)||
 		strlen(other.simpleroute)||strlen(other.compress))
 	{
 		if(nw_other_set(dev,&other) < 0)
@@ -925,7 +943,7 @@ int nw_dev_set(int argc, char **argv)
 		if(nw_mptcp_set(dev,mptcp))
 			return -1;
 	}
-	if(strcmp(dhcp.enable,"yes") == 0)
+	if(strcmp(dhcp.enable,"yes") == 0&&dhcp.startip&&dhcp.endip)
 	{
 		if(nw_dhcp_set(dev,&dhcp))
 			return -1;
@@ -1045,29 +1063,35 @@ static bool is_other(bool other[],size_t size)
 }
 static void other_print(struct nw_other *other,bool is_other[],size_t size)
 {
+
 	if(is_other[0])
-		//fprintf(stdout,"bufflen     \t%dK   \n",other->bufflen);
+		fprintf(stdout,"compress     \t\t%s   \n",other->compress);
 	if(is_other[1])
-		fprintf(stdout,"budget 		\t%d    \n",other->budget);
+		fprintf(stdout,"budget 	\t\t%d    \n",other->budget);
 	if(is_other[2])
-		fprintf(stdout,"queuelen    \t%d    \n",  other->queuelen);
+		fprintf(stdout,"queuelen    \t\t%d    \n", other->queuelen);
 	if(is_other[3])
-		fprintf(stdout,"oneclient   \t%s    \n",strcmp(other->oneclient,"yes")==0?"yes":"no");
+		fprintf(stdout,"oneclient   \t\t%s    \n",strcmp(other->oneclient,"yes")==0?"yes":"no");
 	if(is_other[4])
-		fprintf(stdout,"log    	    \t%s    \n",strcmp(other->showlog,"yes")==0?"yes":"no");
+		fprintf(stdout,"log    	    \t\t%s    \n",strcmp(other->showlog,"yes")==0?"yes":"no");
 	if(is_other[5])
-		fprintf(stdout,"batch       \t%d    \n",other->batch?other->batch:0);
+		fprintf(stdout,"idletimeout \t\t%ds   \n",other->idletimeout);
 	if(is_other[6])
-		fprintf(stdout,"idletimeout \t%ds   \n",other->idletimeout);
+		fprintf(stdout,"switchtime  \t\t%ds   \n",other->switchtime);
 	if(is_other[7])
-		fprintf(stdout,"switchtime  \t%ds   \n",other->switchtime);
+		fprintf(stdout,"autopeer  \t\t%s   \n",strcmp(other->autopeer,"yes")==0?"yes":"no");
+	if(is_other[8])
+		fprintf(stdout,"simpleroute \t\t%s\n",strcmp(other->simpleroute,"yes")==0?"yes":"no");
+	if(is_other[9])
+		fprintf(stdout,"isolate    \t\t%s\n",strcmp(other->isolate,"yes")==0?"yes":"no");
+
 }
 static void ping_print(struct nw_ping *ping,bool is_ping[])
 {
 	if(is_ping[0])
-		fprintf(stdout,"interval   \t%dms   \n",ping->interval);
+		fprintf(stdout,"interval   \t\t%dms   \n",ping->interval);
 	if(is_ping[1])
-		fprintf(stdout,"timeout    \t%dms   \n",ping->timeout);
+		fprintf(stdout,"timeout    \t\t%dms   \n",ping->timeout);
 }
 static void peer_print(struct nw_peer_entry *entry,char *id,int idlen)
 {
