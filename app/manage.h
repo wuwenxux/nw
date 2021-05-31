@@ -37,8 +37,6 @@
 #define NW_COMM_PEER_CHANGE		3		//修改peer
 #define NW_COMM_PEER_DEL		4		//删除peer
 #define NW_COMM_PEER_LIST		5		//列出已有peer
-#define NW_COMM_PEER_CONNECT	6		//发起peer连接
-#define NW_COMM_PEER_CLOSE		7		//关闭peer连接
 
 #define NW_OPER_FAIL		0			//操作失败
 #define NW_OPER_SUCCESS		1			//操作成功
@@ -99,27 +97,19 @@ struct nw_ping
 struct nw_other
 {
 	struct nw_oper_head head;
-	//设置的时候，下面某个参数值为0，就是忽略该参数。只设置非0值的参数。
-	u32  budget;	
-	u32  queuelen; 
+	//设置的时候，下面某个参数值为0或者为空字符串，就是忽略该参数。只设置非0值和非空字符串的参数。
+	char autopeer[4];			//参数值，yes/no
+	u32 budget;
+	u32 queuelen;
 	char oneclient[4];			//参数值，yes/no
 	char showlog[4];			//参数值，yes/no
-	u32  batch;					//discarded
-	u32  idletimeout;			//单位秒
-	u32  switchtime;			//单位秒
-	char autopeer[4];			//参数值，yes/no
 	char isolate[4];			//参数值，yes/no
+	u32 idletimeout;			//单位秒
+	u32 switchtime;				//单位秒
 	char compress[4];			//参数值，yes/no
 	char simpleroute[4];		//参数值，yes/no
 };
-struct nw_dhcp
-{
-	struct nw_oper_head head;//设置的时候，下面某个参数值为0，就是忽略该参数。只设置非0值的参数。
-	char enable[4];			//是否启用DHCP服务。参数值，yes/no
-	u32 startip;			//分配IP范围的开始数值
-	u32 endip;				//分配IP范围的结束数值
-	u32 mask;				//分配IP地址的掩码
-};
+
 struct nw_self
 {
 	struct nw_oper_head head;
@@ -129,7 +119,7 @@ struct nw_self
 struct nw_dev_stat
 {
 	struct nw_oper_head head;
-	u32 up;					//0-down，1-up
+	u32 up;			//0-down，1-up
 	u64 sendpackets;
 	u64 senddrops;
 	u64 senderrors;
@@ -140,6 +130,15 @@ struct nw_dev_stat
 	u64 recverrors;
 	u64 recvbytes;			//字节单位
 	u64 recvspeed;			//字节单位
+};
+
+struct nw_dhcp
+{
+	struct nw_oper_head head;
+	char enable[4];			//是否启用DHCP功能。参数值，yes/no
+	u32 startip;			//分配IP范围的开始数值
+	u32 endip;				//分配IP范围的结束数值
+	u32 mask;				//分配IP地址的掩码
 };
 
 #endif /* _NGMWAN_DEVCTL_H */

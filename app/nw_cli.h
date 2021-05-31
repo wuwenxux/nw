@@ -135,14 +135,7 @@ bool is_exist(const char *dev,char *id);
  * @entry:entry of peers.
  **/ 
 int nw_do_peer_list(const char *dev,struct nw_peer_entry *entry);
-/*connect*/
-/**
- * A ioctl request to connect a peer 
- * Return:0 Success -1 Failed
- * @argc:number of argus
- * @argv:argu params list
- **/
-int nw_dev_connect(int argc, char **argv);
+
 /**
  * A ioctl request to close a peer
  * Return:0 Success -1 Failed

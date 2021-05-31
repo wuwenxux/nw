@@ -171,7 +171,8 @@ int nw_peer_del(int argc, char ** argv)
 			}
 			dev = *argv;
 		}
-		argc--;	argv++;
+		argc--;	
+		argv++;
 	}
 	if(!dev)
 	{
@@ -180,7 +181,6 @@ int nw_peer_del(int argc, char ** argv)
 	}
 	if(entry->count)
 	{
-
 		if(nw_do_del(dev,entry) < 0)
 		{
 			goto FAILED;
@@ -226,85 +226,85 @@ int check_opt_peer(const char *dev, char *value,char *peerid,u32 *nl_ip, u16 *v_
 	}
 	if(get_unsigned16(v_port,port,10))
 	{
-		fprintf(stderr,"%s not valid.\n",port);
+		fprintf(stderr,"%s is not valid.\n",port);
 		goto Failed;
 	}
 	strcpy(peerid,id);
-	//printf("%s %u %u ",peerid,*nl_ip,*v_port);
 	goto Success;
 Failed:
 	return -1;
 Success:
 	return 0;
 }
-//[dev] nw1 peerid PEERID peerip PEERIP  peerpot PORT
+//[dev] nw1 peerid PEERID peerip PEERIP  peerport PORT
 int nw_peer_add(int argc, char ** argv)
 {	
 	struct nw_peer_entry *entry = calloc(1,sizeof(struct nw_peer_entry));
 	if(entry == NULL)
 		return MEMERR;
-	char *dev =NULL;
+	char *dev = NULL;
 	char *id = NULL;
 	char ip[16];
-	u16 port;
-	if (argc !=  7  || argc != 8 )
+	char *port_str = NULL;
+	u16 port ;
+	if(argc == 7 )
 	{
-		fprintf(stderr,"argus are not enough.\n");
+		dev = argv[0];
+		id  = argv[2];
+		strcpy(ip , argv[4]);
+		port_str  = argv[6];
+	}else if(argc == 8 )
+	{
+		dev = argv[1];
+		id = argv[3];
+		strcpy(ip ,argv[5]);
+		port_str = argv[7];
+	}else if(argc == 4) //DEV PEERID PEERIP PEERPORT
+	{
+		dev = argv[0];
+		id = argv[1];
+		strcpy(ip , argv[2]);
+		port_str = argv[3];
+	}else if (argc == 5)//dev DEV ID IP PORT
+	{
+		dev = argv[1];
+		id = argv[2];
+		strcpy(ip ,argv[3]);
+		port_str = argv[4];
+	}else if(argc == 3) //DEV ID IP
+	{
+		dev = argv[0];
+		id = argv[1];
+		strcpy(ip,argv[2]);
+	}else if (argc == 2) // DEV ID
+	{
+		dev = argv[0];
+		id = argv[1];
+		strcpy(ip,"0.0.0.0");
+	}else 
+	{
+		fprintf(stderr,"Argc :[%d] can not be specified.\n",argc);
+	}
+	
+	if(!port_str)
+	{
+		port = 0;
+	}else if( get_unsigned16(&port,port_str,0))
+	{
+		fprintf(stderr,"%s is not a valid port num.",port_str);
 		goto FAILED;
-	}
-	while(argc > 0) 
-	{
-		if(strcmp(*argv,"peerid") == 0 || strcmp(*argv,"id") == 0 )
-		{
-			NEXT_ARG();
-			id = *argv;
-		}else if (strcmp(*argv,"peerip") == 0 || strcmp(*argv,"ip") == 0)
-		{
-			NEXT_ARG();
-			if(check_ipv4(*argv))
-			{
-				free(entry);
-				invarg("invalid ip addr: ",*argv);
-			}
-			strcpy(ip,*argv);
-		}else if(strcmp(*argv,"peerport") == 0 ||strcmp(*argv,"port") == 0)
-		{	
-			NEXT_ARG();
-			if(get_unsigned16(&port,*argv,0))
-			{
-				free(entry);
-				invarg("Invalid \"port\" .",*argv);
-			}
-		}else
-		{
-			if(strcmp(*argv,"dev") == 0)
-			{
-				NEXT_ARG();
-			}
-			if(dev)
-			{
-				duparg2("dev",*argv);
-				goto FAILED;
-			}
-			if(check_ifname(*argv) )
-			{
-				invarg("\"dev\" not a valid ifname", *argv);
-				goto FAILED;
-			}
-			if(check_nw_if(*argv))
-			{
-				invarg("not a running nw dev.",*argv);
-				goto FAILED;
-			}
-			dev = *argv;
-		}
-		argc--;argv++;
-	}
+	}	
+	//add procedure.
 	if(!dev)
 	{
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
 		goto FAILED;
-	}else if(!is_exist(dev,id))
+	}else if (check_nw_if(dev))
+	{
+		fprintf(stderr,"%s is not running.\n",dev);
+		goto FAILED;
+	}
+	else if(!is_exist(dev,id))
 	{
 		strcpy(entry->peerid[0],id);
 		inet_pton(AF_INET,ip,&entry->ip[0]);	
@@ -320,7 +320,7 @@ int nw_peer_add(int argc, char ** argv)
 		}
 	}else
 	{
-		fprintf(stderr,"Peer id is dulplicate.\n ");
+		fprintf(stderr,"Peerid: %s is dulplicate.\n",id);
 		goto FAILED;
 	}
 FAILED:
@@ -343,7 +343,6 @@ bool is_exist(const char *dev,char *id)
 	}
 	if(entry->head.type == NW_OPER_PEER )
 	{
-
 		for(i = 0 ; i < entry->count ; i++)
 		{
 			if(strcmp(entry->peerid[i],id) == 0)

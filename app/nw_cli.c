@@ -540,7 +540,7 @@ int nw_dev_set(int argc, char **argv)
 
 	while(argc > 0)
 	{
-		if(matches(*argv,"budget") == 0 || matches(*argv,"maxblen") == 0)//other.budget
+		if(matches(*argv,"budget") == 0 || matches(*argv,"budg") == 0)//other.budget
 		{
 			if(NEXT_ARG_OK())
 			{
@@ -850,7 +850,7 @@ int nw_dev_set(int argc, char **argv)
 				fprintf(stderr,"value of %s is not exist.\n",*argv);
 				return -1;
 			}
-		}else if (matches(*argv,"multipath") == 0)
+		}else if (matches(*argv,"multipath") == 0 || matches(*argv,"mptcp") == 0)
 		{
 			if( NEXT_ARG_OK())
 			{
@@ -897,7 +897,7 @@ int nw_dev_set(int argc, char **argv)
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
 		exit(-1);
 	}
-	if(	other.batch || other.idletimeout || other.budget|| other.switchtime || other.queuelen ||
+	if(	other.idletimeout || other.budget|| other.switchtime || other.queuelen ||
 		strlen(other.showlog)|| strlen(other.oneclient)||strlen(other.isolate)||strlen(other.autopeer)||
 		strlen(other.simpleroute)||strlen(other.compress))
 	{
@@ -950,65 +950,6 @@ int nw_dev_set(int argc, char **argv)
 	}
 	printf("Success!\n");
 	return 0;
-}
-//dev DEVICE
-int nw_dev_connect(int argc, char **argv)
-{	
-	char *dev = NULL;
-	struct nw_peer_entry *entry = calloc(1,sizeof(struct nw_peer_entry));
-	if(entry == NULL)
-	{
-		fprintf(stderr,"calloc error");
-		return MEMERR;
-	}
-	else
-	{
-		entry->head.type = NW_OPER_PEER;
-		entry->head.command = NW_COMM_PEER_CONNECT;
-	}
-
-	while(argc > 0)
-	{
-		if(strcmp(*argv,"help") == 0 ||strcmp(*argv,"-help") == 0|| strcmp(*argv,"--help") == 0 || strcmp(*argv,"--h") == 0 ||strcmp(*argv,"-h") == 0)
-		{
-			nw_connect_usage();
-		}
-		else{
-			if(strcmp(*argv,"dev") == 0 )
-				NEXT_ARG();
-			if(dev)
-				duparg2(dev,*argv);
-			if(check_ifname(*argv) )
-			{
-				invarg("Invalid dev.\n",*argv);
-				goto FAILED;
-			}
-			if(check_nw_if(*argv))
-			{
-				invarg("not a ngmwan dev.\n",*argv);
-				goto FAILED;
-			}
-			dev = *argv;
-		} 		
-		argc--;argv++;
-	}
-	if(!dev)
-	{
-		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
-		goto FAILED;
-	}
-	strcpy(entry->head.devname,dev);
-	if(nw_ioctl((struct nw_oper_head *)entry) < 0)
-	{
-		goto FAILED;
-	}
-	goto SUCCESS;
-SUCCESS:
-	free(entry);
-	return 0;
-FAILED:
-	free(entry);
-	return -1;
 }
 const char* mode_str( u32 mode)
 {
@@ -1063,7 +1004,6 @@ static bool is_other(bool other[],size_t size)
 }
 static void other_print(struct nw_other *other,bool is_other[],size_t size)
 {
-
 	if(is_other[0])
 		fprintf(stdout,"compress     \t\t%s   \n",other->compress);
 	if(is_other[1])
@@ -1084,7 +1024,6 @@ static void other_print(struct nw_other *other,bool is_other[],size_t size)
 		fprintf(stdout,"simpleroute \t\t%s\n",strcmp(other->simpleroute,"yes")==0?"yes":"no");
 	if(is_other[9])
 		fprintf(stdout,"isolate    \t\t%s\n",strcmp(other->isolate,"yes")==0?"yes":"no");
-
 }
 static void ping_print(struct nw_ping *ping,bool is_ping[])
 {

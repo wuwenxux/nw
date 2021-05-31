@@ -73,7 +73,7 @@ struct nw_file *file_open(char *path)
 
 	if((confFile = fopen(path,"r"))== NULL)
 	{
-		fprintf(stderr,"this file is empty\n");
+		fprintf(stderr,"This file is empty.\n");
 		return NULL;
 	}
 	//file malloc 
@@ -106,7 +106,7 @@ struct nw_file *file_open(char *path)
 				thisConfig = add_config(file,conf_name);
 		   }else
 		   {
-			   	fprintf(stderr,"interface is expected.\n");
+			   	fprintf(stderr,"Interface is expected.\n");
 		   		goto EXIT;
 		   }
 		}else if(strcmp(word,"option")== 0)
@@ -277,7 +277,7 @@ int nw_load_conf(char *path)
 					{
 						fprintf(stderr,"\'%s\' param \'%s\' :invalid option string %s\n",thisConf->name,thisOpt->key,thisVal->string);
 						ret = -1;
-						goto RETURN;
+						goto RETURN; 
 					}
 					strcpy(entry->peerid[peerIndex],peer_id);
 					entry->ip[peerIndex] = peer_ip;
@@ -308,7 +308,7 @@ int nw_load_conf(char *path)
 				{
 					if(get_unsigned32(&o.queuelen,thisVal->string,10))
 					{
-						fprintf(stderr,"\'%s\' param \'%s\':invalid queuelen val.\n",thisConf->name,thisOpt->key);
+						fprintf(stderr,"\'%s\' param \'%s\' is invalid.\n",thisConf->name,thisOpt->key);
 						ret = -1;
 						goto RETURN;
 					}
@@ -372,7 +372,7 @@ int nw_load_conf(char *path)
 				}else if(strcmp(thisOpt->key,"dhcp") == 0)
 				{
 					assert(thisVal->string != NULL);
-					printf("%s %s\n",thisOpt->key,thisVal->string);
+					//printf("%s %s\n",thisOpt->key,thisVal->string);
 					if(strcmp(thisVal->string,"yes") == 0)
 					{
 						strcpy(d.enable,"yes");
@@ -387,44 +387,50 @@ int nw_load_conf(char *path)
 				}else if(strcmp(thisOpt->key,"dhcp-startip") == 0)
 				{
 					assert(thisVal->string != NULL);
-					printf("%s %s\n",thisOpt->key,thisVal->string);
+					//printf("%s %s\n",thisOpt->key,thisVal->string);
 					if((ret = check_ipv4(thisVal->string)))
 					{
-						fprintf(stderr,"%s is not a valid ip addr.",thisVal->string);
+						fprintf(stderr,"%s is not a valid dhcp-ip addr.",thisVal->string);
 						goto RETURN;
 					}
 					ret = inet_pton(AF_INET,thisVal->string,&d.startip);
 					if(ret < 1)
 					{
-						fprintf(stderr,"%s convert to u32 failure.\n",thisVal->string);
+						fprintf(stderr,"%s convert to be32 failure.\n",thisVal->string);
 						goto RETURN;
 					}
-					fprintf(stdout,"%s %u\n",thisOpt->key,d.startip);
+					//fprintf(stdout,"%s %u\n",thisOpt->key,d.startip);
 				}else if (strcmp(thisOpt->key,"dhcp-endip") == 0)
 				{
 					assert(thisVal->string != NULL);
-					fprintf(stdout,"%s %s\n",thisOpt->key,thisVal->string);
+					//fprintf(stdout,"%s %s\n",thisOpt->key,thisVal->string);
 					if((ret = check_ipv4(thisVal->string)))
+					{
+						fprintf(stderr,"%s is not a valid dhcp-ip addr.",thisVal->string);
 						goto RETURN;
+					}
 					ret = inet_pton(AF_INET,thisVal->string,&d.endip);
 					if(ret < 1)
 					{
 						fprintf(stderr,"%s convert to u32 failure.\n",thisVal->string);
 						goto RETURN;
 					}
-					fprintf(stdout,"%s %u\n",thisOpt->key,d.endip);
+					//fprintf(stdout,"%s %u\n",thisOpt->key,d.endip);
 				}else if(strcmp(thisOpt->key,"dhcp-mask") == 0)
 				{
 					assert(thisVal->string != NULL);
 					if((ret = check_netmask(thisVal->string)))
+					{
+						fprintf(stderr,"%s :%s is not valid.\n",thisOpt->key,thisVal->string);
 						goto RETURN;
+					}
 					ret = inet_pton(AF_INET,thisVal->string,&d.mask);
 					if(ret < 1)
 					{
 						fprintf(stderr,"%s convert to u32 failure.\n",thisVal->string);
 						goto RETURN;
 					}
-					fprintf(stdout,"%s %u\n",thisOpt->key,d.mask);
+					//fprintf(stdout,"%s %u\n",thisOpt->key,d.mask);
 				}
 				thisVal = thisVal->next;
 			}
@@ -447,9 +453,23 @@ int nw_load_conf(char *path)
 			fprintf(stderr,"setup %s failed\n",dev);
 			goto RETURN;
 		}
-		if(o.idletimeout||o.switchtime||o.queuelen||
-			strlen(o.oneclient)||strlen(o.showlog)||strlen(o.isolate)||strlen(o.simpleroute)||
-			strlen(o.compress))
+		/*
+		autopeer,			//参数值，yes/no
+		budget,
+		queuelen,
+		oneclient,			//参数值，yes/no
+		showlog,			//参数值，yes/no
+		isolate,			//参数值，yes/no
+		idletimeout,		//单位秒
+		switchtime,			//单位秒
+		compress,			//参数值，yes/no
+		simpleroute,		//参数值，yes/no
+		*/
+		if(strlen(o.simpleroute)||strlen(o.compress)||
+			o.switchtime||o.idletimeout||
+			strlen(o.isolate)||strlen(o.showlog)||
+			strlen(o.oneclient)||o.queuelen||
+			o.budget||strlen(o.autopeer))
 		{
 			if((ret = nw_other_set(dev,&o)))
 				goto RETURN;
@@ -561,7 +581,6 @@ int nw_save_conf(char *path)
 			}
 			sleep(1);
 			printf("Config %s save success.\n",dev);
-			
 		}
 	}
 	goto RETURN;
@@ -577,7 +596,6 @@ static int nw_save_dev(FILE *fp,const char *dev)
 	assert(dev != NULL);
 	assert(fp != NULL);
 	int ret = 0;
-	//int i ;
 	if (dev  == NULL)
 	{
 		ret = -1;
@@ -716,7 +734,7 @@ int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 	assert(dev != NULL);
 	if(check_nw_if(dev) == 0)
 	{
-		fprintf(stderr,"%s is already exist. change a ifname\n",dev);
+		fprintf(stderr,"%s is already exist, change a ifname.\n",dev);
 		return -1;
 	}
 	sprintf(dev_cmd,"ip link add %s type ngmwan",dev);

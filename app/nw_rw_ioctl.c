@@ -5,6 +5,7 @@
 #include <err.h>
 /*peer ioctl*/
 //dev connect peerid
+/*
 int nw_do_connect(const char *dev, struct nw_peer_entry *entry)
 {
 	int ret;
@@ -15,7 +16,7 @@ int nw_do_connect(const char *dev, struct nw_peer_entry *entry)
 	entry->head.type = NW_COMM_PEER_CONNECT;
 	ret = nw_ioctl(&entry->head);
 	return ret;
-}
+}*/
 //show dev peer
 int nw_do_peer_list(const char *dev ,struct nw_peer_entry *entry)
 {
@@ -254,9 +255,7 @@ int nw_search_if( char *dev)
 		err(EXIT_FAILURE,"%s",cmdline);
 		return -1;
 	}
-	
 	memset(buf,0,sizeof(buf));
-
 	/*nw%d device search*/
 	while(fgets(buf,512,fp) != NULL)
 	{
