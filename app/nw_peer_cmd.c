@@ -283,7 +283,7 @@ int nw_peer_add(int argc, char ** argv)
 		strcpy(ip,"0.0.0.0");
 	}else 
 	{
-		fprintf(stderr,"Argc :[%d] can not be specified.\n",argc);
+		fprintf(stderr,"Argc :[%d] unexpected nums.\n",argc);
 	}
 	
 	if(!port_str)

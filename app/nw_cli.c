@@ -34,34 +34,35 @@ void nw_peer_usage(void)
 }
 void nw_set_usage(void)
 {
-	fprintf(stderr, "Usage:...set dev DEV  TYPE\n"
-					"						autopeer    YES|NO\n"
-					"						isolate		YES|NO\n"
-					"						compress	YES|NO\n"
-					"						simpleroute YES|NO\n"
-					"						oneclient   YES|NO\n"
-					"						showlog     YES|NO\n"
-				    "						budget  	MAXBUFLEN\n"
-				    "						queuelen    QUEUELEN\n"
-				    "						idletimeout TIMEVALUE\n"
-					"						switchtime  SWITCHTIME\n"
-					"						bindport 	PORT\n");
+	fprintf(stderr, "Usage:...set dev DEV  \n"
+					"			autopeer    	YES|NO\n"
+					"			isolate		YES|NO\n"
+					"			compress	YES|NO\n"
+					"			simpleroute 	YES|NO\n"
+					"			oneclient   	YES|NO\n"
+					"			showlog     	YES|NO\n"
+				    "			budget  	MAXBUFLEN\n"
+				    "			queuelen    	QUEUELEN\n"
+				    "			idletimeout 	TIMEVALUE\n"
+					"			switchtime  	SWITCHTIME\n"
+					"			bindport 	PORT\n");
 	exit(-1);
 }
 void nw_show_usage(void)
 {
 	fprintf(stderr, "Usage:...show DEV  TYPE\n"
-					"						autopeer    YES|NO\n"
-					"						isolate		YES|NO\n"
-					"						compress	YES|NO\n"
-					"						simpleroute YES|NO\n"
-				    "						budget  MAXBUFLEN\n"
-				    "						queuelen    QUEUELEN\n"
-				    "						idletimeout TIMEVALUE\n"
-					"						oneclient   YES|NO\n"
-					"						showlog     YES|NO\n"
-					"						switchtime  SWITCHTIME\n"
-					"						bindport 	PORT\n");
+					"				mode 		CLIENT|SERVER\n"
+					"				autopeer    YES|NO\n"
+					"				isolate		YES|NO\n"
+					"				compress	YES|NO\n"
+					"				simpleroute YES|NO\n"
+				    "				budget  MAXBUFLEN\n"
+				    "				queuelen    QUEUELEN\n"
+				    "				idletimeout TIMEVALUE\n"
+					"				oneclient   YES|NO\n"
+					"				showlog     YES|NO\n"
+					"				switchtime  SWITCHTIME\n"
+					"				bindport 	PORT\n");
 	exit(-1);
 
 }
@@ -224,10 +225,10 @@ int main(int argc,char *argv[])
 		{
 			return nw_peer_del(argc-1,argv+1);
 		}
-		else if(matches(*argv,"close") == 0)
+		/*else if(matches(*argv,"close") == 0)
 		{
 			return nw_dev_close(argc-1,argv+1);
-		}
+		}*/
 		else if(matches(*argv,"help") == 0 ||matches(*argv,"--help") == 0 ||matches(*argv,"-help") == 0||matches(*argv,"--h") == 0||matches(*argv,"-h") == 0)
 		{
 			nw_usage();
@@ -323,7 +324,7 @@ int nw_dev_show(int argc, char **argv)
 	memset(&bind,0,sizeof(struct nw_bind));
 	memset(&self,0,sizeof(struct nw_self));
 	memset(&dhcp,0,sizeof(struct nw_dhcp));
-	
+
 	while(argc > 0)
 	{
 		if(strcmp(*argv,"compress") == 0)
@@ -399,8 +400,16 @@ int nw_dev_show(int argc, char **argv)
 			r_dhcp = true;
 		}else
 		{
-			if(strcmp(*argv,"dev") == 0)
-				NEXT_ARG();
+			if(strcmp(*argv,"dev") == 0 )
+			{
+				if( NEXT_ARG_OK())
+					NEXT_ARG();
+				else 
+				{
+					nw_show_usage();
+					exit(EXIT_FAILURE);
+				}
+			}
 			if(dev)
 			{
 				duparg2(dev,*argv);
@@ -526,18 +535,22 @@ int nw_dev_set(int argc, char **argv)
 	struct nw_ping ping;
 	struct nw_self self;
 	struct nw_dhcp dhcp;
+	int ret;
 	bool set_ping[2] = {false};
 	bool set_mptcp = false;
 	char *dev = NULL;
 	bool mptcp= false;
-
 	memset(&other,0,sizeof(struct nw_other));
 	memset(&bind,0,sizeof(struct nw_bind));
 	memset(&mo,0,sizeof(struct nw_type));
 	memset(&ping,0,sizeof(struct nw_ping));
 	memset(&self,0,sizeof(struct nw_self));
 	memset(&dhcp,0,sizeof(struct nw_dhcp));
-
+	if(argc == 1 || argc == 2) 
+	{
+		nw_set_usage();
+		exit(EXIT_FAILURE);
+	}
 	while(argc > 0)
 	{
 		if(matches(*argv,"budget") == 0 || matches(*argv,"budg") == 0)//other.budget
@@ -870,7 +883,14 @@ int nw_dev_set(int argc, char **argv)
 		}else
 		{//dev
 			if(strcmp(*argv,"dev") == 0 )
-				NEXT_ARG();
+			{
+				if(NEXT_ARG_OK())
+					NEXT_ARG();
+				else {
+					nw_set_usage();
+					exit(EXIT_FAILURE);
+				}
+			}
 			else if (strcmp(*argv,"help") == 0)
 				nw_set_usage();
 			if(dev)
@@ -884,7 +904,7 @@ int nw_dev_set(int argc, char **argv)
 				return -1;
 			}if(check_nw_if(*argv))
 			{
-				invarg("not a ngmwan interface",*argv);
+				invarg("not a running nw interface",*argv);
 				return -1;
 			}	
 			dev = *argv;
@@ -895,36 +915,35 @@ int nw_dev_set(int argc, char **argv)
 	if(!dev)
 	{
 		fprintf(stderr,"Not enough information:\"dev\" argument is required.\n");
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
-	if(	other.idletimeout || other.budget|| other.switchtime || other.queuelen ||
-		strlen(other.showlog)|| strlen(other.oneclient)||strlen(other.isolate)||strlen(other.autopeer)||
-		strlen(other.simpleroute)||strlen(other.compress))
+	if(other.idletimeout || other.budget|| other.switchtime || other.queuelen ||
+		strlen(other.showlog)|| strlen(other.oneclient)||strlen(other.isolate)||
+		strlen(other.autopeer)||strlen(other.simpleroute)||strlen(other.compress))
 	{
-		if(nw_other_set(dev,&other) < 0)
-			return -1;
+		ret = nw_other_set(dev,&other);
+		goto set_result;
 	}
 	if(bind.port > 0)
 	{
-		if(nw_bind_set(dev,&bind) < 0 ) 
-			return -1;
+		ret = nw_bind_set(dev,&bind);
+		goto set_result;
 	}
 	if(mo.mode)
 	{
-		if(nw_type_set(dev,&mo) < 0) 
-			return -1;
+		ret = nw_type_set(dev,&mo); 
+		goto set_result;
 	}
-	if(set_ping[0]&&set_ping[1])
+	if(set_ping[0] && set_ping[1])
 	{
 		if(ping.interval < ping.timeout)
 		{
-			if(nw_ping_set(dev,&ping) < 0)
-				return -1;
-		}
-		else
+			ret = nw_ping_set(dev,&ping);
+			goto set_result;
+		}else
 		{
 			fprintf(stderr,"interval should be smaller than timeout.\n");
-			return -1;
+			return -1;	
 		}
 	}else if(set_ping[0] == false && set_ping[1] == false)
 	{
@@ -935,21 +954,40 @@ int nw_dev_set(int argc, char **argv)
 	}
 	if(strlen(self.peerid))
 	{
-		if(nw_self_set(dev,&self) < 0)
-			return -1;
+		ret = nw_self_set(dev,&self);
+		goto set_result;
 	}
 	if(set_mptcp)
 	{
-		if(nw_mptcp_set(dev,mptcp))
-			return -1;
+		ret = nw_mptcp_set(dev,mptcp);
+		goto set_result;
 	}
-	if(strcmp(dhcp.enable,"yes") == 0&&dhcp.startip&&dhcp.endip)
+	if(strcmp(dhcp.enable,"yes") == 0 && dhcp.startip && dhcp.endip)
 	{
-		if(nw_dhcp_set(dev,&dhcp))
+		if(nw_type_read(dev,&mo) == NW_OPER_SUCCESS && mo.mode == NW_MODE_SERVER)
+		{
+			ret = nw_dhcp_set(dev,&dhcp);
+			goto set_result;
+		}else
+		{
+			fprintf(stderr,"Only server mode  can be configured.\n");
 			return -1;
+		}
+	}else
+	{
+		fprintf(stderr,"All dhcp args (dhcp,ip,mask) should be set.\n");
+		return -1;
 	}
-	printf("Success!\n");
-	return 0;
+set_result:
+	if(ret == NW_OPER_FAIL)
+	{
+		printf("Fail.\n");
+		return -1;
+	}else 
+	{
+		printf("Success!\n");
+		return 0;
+	}
 }
 const char* mode_str( u32 mode)
 {

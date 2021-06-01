@@ -871,6 +871,7 @@ static struct nw_option* add_option(struct nw_config *conf,const char *key,const
 struct nw_config* find_config(struct nw_file *file,const char *name)
 {
 	struct nw_config *thisConf= NULL;
+	assert(file != NULL);
 	if(file == NULL || name == NULL )
 	{
 		fprintf(stderr,"File not exist,param error.\n");

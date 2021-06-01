@@ -242,7 +242,7 @@ int nw_ioctl(struct nw_oper_head *head)
 		fprintf(stderr,"%s type:%d command:%d %s\n",req.ifr_name,head->type,head->command,strerror(errno));
 	}
 	close(sock);
-	return !head->result;
+	return head->result;
 }
 int nw_search_if( char *dev)
 {
@@ -347,7 +347,7 @@ void do_read(struct nw_oper_head *head)
 	}else if(head->type == NW_OPER_SELF)
 	{
 		struct nw_self *self = (struct nw_self *) head;
-		fprintf(stdout,"ownid	   	\t%s	  \n",strlen(self->peerid)?self->peerid:"None");
+		fprintf(stdout,"ownid	   	\t%s	  \n",strlen(self->peerid)?self->peerid:" ");
 	}else if(head->type == NW_OPER_DHCP)
 	{
 		struct nw_dhcp *dhcp =(struct nw_dhcp *)head;

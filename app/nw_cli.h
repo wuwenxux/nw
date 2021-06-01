@@ -11,7 +11,29 @@
 #define DEFAULT_CONF_FILE  "./ngmwan"
 #define DEFAULT_SAVE_FILE  "./save_ngmwan"
 #define CONF_NAME_SIZE 20
-
+enum cmd{
+	NW_CMD_SET = 0,
+	NW_CMD_SHOW,
+	NW_CMD_SAVE,
+	NW_CMD_LOAD,
+	NW_CMD_help,
+	NW_CMD_SHOW_PEER,
+	NW_CMD_ADD_PEER,
+	NW_CMD_DEL_PEER,
+	NW_CMD_LIST_PEER,
+	NW_CMD_CHANGE_PEER,
+	__MAX__CMD__,
+	NW_MAX_LAST = __MAX__CMD__-1,
+};
+enum _set_flags{
+	set_dhcp = (1<<0),
+	set_dev  = (1<<1),
+	set_other= (1<<2),
+	set_mptcp= (1<<3),
+	set_ping = (1<<4),
+	set_self = (1<<5),
+	set_bind = (1<<6),
+}flags;
 /*common*/
 void nw_dev_show_statistic(char  *);
 void nw_dev_show_args(char *);
