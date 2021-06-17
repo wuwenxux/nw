@@ -293,7 +293,6 @@ int nw_peer_add(int argc, char ** argv)
 			port_str  = argv[6];
 		}else
 		{
-
 			nw_peer_usage();
 			goto params_error;
 		}
@@ -354,17 +353,14 @@ int nw_peer_add(int argc, char ** argv)
 		port = 0;
 	}else if (get_unsigned16(&port,port_str,0))
 	{
-		
 		goto port_validate_failed;
 	}	
 	//add procedure.
 	if(!dev)
 	{
-	
 		goto dev_is_required;
 	}else if (check_nw_if(dev))
 	{
-		
 		goto dev_is_exist;
 	}
 	else if(!is_exist(dev,id))

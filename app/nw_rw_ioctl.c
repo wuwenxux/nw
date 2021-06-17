@@ -344,6 +344,7 @@ void do_read(struct nw_oper_head *head)
 		fprintf(stdout,"queuelen	\t%d    \n",other->queuelen);
 		fprintf(stdout,"idletimeout	\t%ds   \n",other->idletimeout);
 		fprintf(stdout,"switchtime 	\t%ds	\n",other->switchtime);
+		
 	}else if(head->type == NW_OPER_SELF)
 	{
 		struct nw_self *self = (struct nw_self *) head;

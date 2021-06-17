@@ -16,6 +16,7 @@
  * @path:path to the file.
  **/
 static struct nw_config* add_config(struct nw_file *file,const char *path);
+
 /**
  * Add a nw_option object into  nw_config;
  * @key ,@value must be valid  if either of them is NULL, return NULL.
@@ -25,6 +26,7 @@ static struct nw_config* add_config(struct nw_file *file,const char *path);
  * @value:value of the option
  **/
 static struct nw_option* add_option(struct nw_config *config,const char *key,const char *value);
+
 /**
  * Add a value to nw_val object.
  * @opt,value must be valid if either of them is NULL, return NULL.
@@ -34,6 +36,7 @@ static struct nw_option* add_option(struct nw_config *config,const char *key,con
  * @value:val of this opt.
  **/
 static struct nw_option* add_value(struct nw_option *opt, const char *value);
+
 /**
  * Find a nw_config from the nw_file file
  * @file and @name should be valid input, if NULL or invalid return NULL. 
@@ -42,6 +45,7 @@ static struct nw_option* add_value(struct nw_option *opt, const char *value);
  * @name:name of this nw_config
  **/ 
 struct nw_config* find_config(struct nw_file *file,const char *name);
+
 /**
  * Find a option in the nw_conf object.
  * @name and @key are supposed to be valid ,if not ,return NULL.
@@ -728,6 +732,7 @@ result:
 	free(npe);
 	return ret;
 }
+
 static int nw_remove(const char *dev)
 {
 	int ret ;
@@ -739,6 +744,7 @@ static int nw_remove(const char *dev)
 		return -1;
 	return 0;
 }
+
 static void nw_clear()
 {
 	char show_cmd[50];
@@ -780,6 +786,7 @@ static void nw_clear()
 	pclose(fp);
 	return ;
 }
+
 int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 {
 	int ret = -1;
@@ -817,10 +824,10 @@ int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 		fprintf(stderr,"Error:dev set txqueuelen failed.\n");
 		return -1;
 	}
-	if(strlen(ip_str)&&strlen(mask_str))
+	if(strlen(ip_str))
 	{
 		strcpy(ip_v4,ip_str);
-		printf("%s\n",ip_v4);
+		//printf("%s\n",ip_v4);
 		ret = check_ipv4(ip_v4);
 		if(ret)
 		{
@@ -829,7 +836,7 @@ int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 		}
 		strcpy(mask_str,netmask);
 		ret = check_netmask(mask_str);
-		printf("%s\n",mask_str);
+		//printf("%s\n",mask_str);
 		if(ret)
 		{
 			fprintf(stderr,"Error:dev %s net mask invalid.\n",mask_str);
@@ -845,6 +852,7 @@ int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 	}
 	return 0;
 }
+
 static struct nw_config* add_config(struct nw_file *file,const char *name)
 {
 	struct nw_config *prevConfig = NULL;
@@ -885,6 +893,7 @@ static struct nw_config* add_config(struct nw_file *file,const char *name)
 
 	return thisConfig;
 }
+
 static struct nw_option* add_value(struct nw_option *thisOpt ,const char *value)
 {
 	//allocate  a new value item 
@@ -921,6 +930,7 @@ static struct nw_option* add_value(struct nw_option *thisOpt ,const char *value)
 	prevVal->next = thisVal;
 	return thisOpt;
 }
+
 static struct nw_option* add_option(struct nw_config *conf,const char *key,const char *val)
 {
 	struct nw_option *thisOpt = NULL;
@@ -958,6 +968,7 @@ static struct nw_option* add_option(struct nw_config *conf,const char *key,const
 	return thisOpt;
 
 }
+
 struct nw_config* find_config(struct nw_file *file,const char *name)
 {
 	struct nw_config *thisConf= NULL;
@@ -978,6 +989,7 @@ struct nw_config* find_config(struct nw_file *file,const char *name)
 	}
 	return thisConf;
 }
+
 struct nw_option* find_option(struct nw_config *conf,const char *key)
 {
 	struct nw_option *thisOpt = NULL;
@@ -996,6 +1008,7 @@ struct nw_option* find_option(struct nw_config *conf,const char *key)
 	}
 	return thisOpt;
 }
+
 int  find_value(struct nw_option *opt,const char *val)
 {
 	struct nw_value *thisVal = NULL;
@@ -1028,9 +1041,10 @@ void file_close(struct nw_file **file)
 	struct nw_value *nextVal = NULL;
 
 	assert(file != NULL || *file != NULL);
+
 	if(file == NULL || *file == NULL)
 	{
-		fprintf(stderr,"File not exist, params error.\n");
+		fprintf(stderr,"Error: file not exist, params error.\n");
 		return;
 	}
 
@@ -1063,11 +1077,12 @@ void file_close(struct nw_file **file)
 		free(thisConf);
 		thisConf = nextConf;
 	}
+
 	free((*file)->name);
 	free(*file);
 	*file = NULL;
-
 }
+
 static void nw_dev_conf_export(FILE *fp,
                             const char *dev,
 							const char *dev_ip,

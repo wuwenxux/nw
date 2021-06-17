@@ -27,9 +27,10 @@ void nw_ver(void)
 void nw_peer_usage(void)
 {
 	fprintf(stderr, "Usage:  ...peerid PEERID peerip PEERIP peerport PEERPORT\n"
+							"	...peer|peerid PEERID PEERIP PEERPORT\n"
 							"	...PEERID PEERIP PEERPORT\n"
 							"	...PEERID PEERIP\n"
-							"	...peer|peerid PEERID PEERIP PEERPORT\n"
+							"	...PEERID\n"
 					"	PEERID:  64 chars\n"
 					"	PEERIP:  ip addr\n"
 					"	PEERPORT: 0-65535\n");
@@ -37,36 +38,36 @@ void nw_peer_usage(void)
 }
 void nw_set_usage(void)
 {
-	fprintf(stderr, "Usage:...set dev DEV  \n"
-					"			interval VALUE timeout VALUE\n"
-					"			autopeer    	yes|no\n"
-					"			isolate		yes|no\n"
-					"			compress	yes|no\n"
-					"			simpleroute 	yes|no\n"
-					"			oneclient   	yes|no\n"
-					"			log   	  	yes|no\n"
-				    "			budget  	VALUE\n"
-				    "			queuelen    	VALUE\n"
-				    "			idletimeout 	VALUE\n"
-					"			switchtime  	VALUE\n"
-					"			bindport 	VALUE\n");
+	fprintf(stderr, "Usage:...set dev DEV\n"
+						"		interval VALUE timeout VALUE\n"
+						"		autopeer    	yes|no\n"
+						"		isolate		yes|no\n"
+						"		compress	yes|no\n"
+						"		simpleroute 	yes|no\n"
+						"		oneclient   	yes|no\n"
+						"		log   	  	yes|no\n"
+					    "		budget  	VALUE\n"
+				    	"		queuelen    	VALUE\n"
+				   	 	"		idletimeout 	VALUE\n"
+						"		switchtime  	VALUE\n"
+						"		bindport 	VALUE\n");
 	return;
 }
 void nw_show_usage(void)
 {
 	fprintf(stderr, "Usage:...show DEV  TYPE\n"
-					"				mode 		client|server\n"
-					"				autopeer    yes|no\n"
-					"				isolate		no|no\n"
-					"				compress	yes|no\n"
-					"				simpleroute yes|no\n"
-				    "				budget  VALUE\n"
-				    "				queuelen    VALUE\n"
-				    "				idletimeout VALUE\n"
-					"				oneclient   yes|no\n"
-					"				showlog     yes|no\n"
-					"				switchtime  VALUE\n"
-					"				bindport 	VALUE\n");
+						"		mode 		client|server\n"
+						"		autopeer    yes|no\n"
+						"		isolate		no|no\n"
+						"		compress	yes|no\n"
+						"		simpleroute yes|no\n"
+				    	"		budget  VALUE\n"
+				    	"		queuelen    VALUE\n"
+				    	"		idletimeout VALUE\n"
+						"		oneclient   yes|no\n"
+						"		showlog     yes|no\n"
+						"		switchtime  VALUE\n"
+						"		bindport 	VALUE\n");
 	return;
 
 }
@@ -96,7 +97,7 @@ void  nw_usage(void)
 			" [ peerid  PEERID peerip PEERIP peerport PEERPORT ] | [ PEERID PEERIP PEERPORT ] | [ PEERID PEERIP ] | [ PEERID ]\n"
             "	nw del	  { DEVICE | dev DEVICE }   { peer PEERID,PEERID,PEERID }\n"
 			" 	nw set 	  { DEVICE | dev DEVICE }\n"
-			"   				 		[ bindport PORTNUM ]|\n"
+			"   				 	[ bindport PORTNUM ]|\n"
 			"						[ interval INTERVAL timeout TIMEOUT ]|\n "
 			"						[ autopeer    { yes | no } ]\n"
 			"						[ isolate		{ yes | no } ]\n"

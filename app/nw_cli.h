@@ -211,7 +211,7 @@ int nw_do_peer_list(const char *dev,struct nw_peer_entry *entry);
  * @dev:a ngmwan type dev.
  * @yes_no:switch on/off.
  **/
-int  nw_mptcp_set(char *dev ,bool yes_no);
+int nw_mptcp_set(char *dev ,bool yes_no);
 
 /**
  * A ioctl request to close a peer
