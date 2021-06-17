@@ -30,9 +30,9 @@ void nw_peer_usage(void)
 							"	...PEERID PEERIP PEERPORT\n"
 							"	...PEERID PEERIP\n"
 							"	...peer|peerid PEERID PEERIP PEERPORT\n"
-					"		PEERID: [MAX_PEERNAME_LENGTH]\n"
-					"		PEERIP:  ip addr\n"
-					"		PEERPORT: 0-65535\n");
+					"	PEERID:  64 chars\n"
+					"	PEERIP:  ip addr\n"
+					"	PEERPORT: 0-65535\n");
 	return;
 }
 void nw_set_usage(void)
@@ -44,7 +44,7 @@ void nw_set_usage(void)
 					"			compress	yes|no\n"
 					"			simpleroute 	yes|no\n"
 					"			oneclient   	yes|no\n"
-					"			showlog     	yes|no\n"
+					"			log   	  	yes|no\n"
 				    "			budget  	VALUE\n"
 				    "			queuelen    	VALUE\n"
 				    "			idletimeout 	VALUE\n"
@@ -122,7 +122,7 @@ const char *other_str[] =
 	"budget",
 	"queuelen",
 	"oneclient",
-	"showlog",
+	"log",
 	"idletimeout",
 	"switchtime",
 	"autopeer",
@@ -728,7 +728,7 @@ int nw_dev_set(int argc, char **argv)
 				NEXT_ARG();
 				if(get_unsigned32(&other.idletimeout,*argv,0) || other.idletimeout < 30 )
 				{
-					invarg("invalid \"idletimeout\" value,supposed to be greater than 30\n",*argv);
+					invarg("invalid \"idletimeout\" value,supposed to be greater than 30.",*argv);
 					return -1;
 				}
 			}else{
@@ -762,7 +762,7 @@ int nw_dev_set(int argc, char **argv)
 				NEXT_ARG();
 				if(get_unsigned16(&bind.port,*argv,0))
 				{
-					invarg("invalid \"bindport \" value\n",*argv);
+					invarg("invalid \"bindport \" value.",*argv);
 					return -1;
 				}
 			}else
@@ -780,7 +780,7 @@ int nw_dev_set(int argc, char **argv)
 				NEXT_ARG();
 				if(get_unsigned32(&ping.interval,*argv,0))
 				{
-					invarg("invalid \"interval \" value\n",*argv);
+					invarg("invalid \"interval \" value.",*argv);
 					return -1;
 				}
 			}else
@@ -798,7 +798,7 @@ int nw_dev_set(int argc, char **argv)
 				NEXT_ARG();
 				if(get_unsigned32(&ping.timeout,*argv,0))
 				{
-					invarg("not a valid \"timeout \" value\n",*argv);
+					invarg("not a valid \"timeout \" value.",*argv);
 					return -1;
 				}
 			}else
@@ -813,7 +813,7 @@ int nw_dev_set(int argc, char **argv)
 				NEXT_ARG();
 				if(check_self(*argv))
 				{
-					invarg("invalid \"ownid \" value\n",*argv);
+					invarg("invalid \"ownid \" value.",*argv);
 					return -1;
 				}
 				strcpy(self.peerid,*argv);
@@ -901,7 +901,7 @@ int nw_dev_set(int argc, char **argv)
 				NEXT_ARG();
 				if(get_unsigned32(&other.switchtime,*argv,0))
 				{
-					invarg("invalid \"switchtime \" value\n",*argv);
+					invarg("invalid \"switchtime \" value.",*argv);
 					return -1;
 				}
 			}else
@@ -946,12 +946,12 @@ int nw_dev_set(int argc, char **argv)
 			}
 			if(check_ifname(*argv))
 			{
-				invarg("not a valid interface name",*argv);
+				invarg("not a valid interface name.",*argv);
 				return -1;
 			}
 			if(check_nw_if(*argv))
 			{
-				invarg("not a running nw interface",*argv);
+				invarg("not a running nw interface.",*argv);
 				return -1;
 			}	
 			dev = *argv;

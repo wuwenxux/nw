@@ -257,7 +257,7 @@ int check_opt_peer(const char *dev, char *value,char *peerid,u32 *nl_ip, u16 *v_
 	//convert ip to u32 form
 	if(check_ipv4(ip)||inet_pton(AF_INET,ip,nl_ip)<1)
 	{
-		fprintf(stderr,"Option with ip %s is not valid.\n",ip);
+		fprintf(stderr,"Error:Option with ip %s is not valid.\n",ip);
 		goto Failed;
 	}
 	if(get_unsigned16(v_port,port,10))
@@ -285,7 +285,7 @@ int nw_peer_add(int argc, char ** argv)
 	u16 port ;
 	if( argc == 7 )
 	{
-		if( matches(argv[1],"peerid") == 0 && matches(argv[3],"peerip")==0 && matches(argv[5],"peerport") == 0)
+		if( matches(argv[1],"peerid") == 0 &&  matches(argv[3],"peerip") == 0 && matches(argv[5],"peerport") == 0)
 		{	
 			dev = argv[0];
 			id  = argv[2];
@@ -293,12 +293,13 @@ int nw_peer_add(int argc, char ** argv)
 			port_str  = argv[6];
 		}else
 		{
+
 			nw_peer_usage();
 			goto params_error;
 		}
 	}else if( argc == 8 )
 	{
-		if(matches(argv[0],"dev") == 0 && matches(argv[2],"peerid")== 0 && matches(argv[4],"peerip") == 0 && matches(argv[6],"peerport") == 0)
+		if( matches(argv[0],"dev") == 0 && matches(argv[2],"peerid")== 0 && matches(argv[4],"peerip") == 0 && matches(argv[6],"peerport") == 0 )
 		{
 			dev = argv[1];
 			id = argv[3];
@@ -315,13 +316,23 @@ int nw_peer_add(int argc, char ** argv)
 		id = argv[1];
 		strcpy(ip , argv[2]);
 		port_str = argv[3];
-	}else if (argc == 5)//dev DEV ID IP PORT
+	}else if (argc == 5)//dev DEV ID IP PORT  or DEV peer ID IP PORT
 	{
 		if(matches(argv[0],"dev") == 0){
 			dev = argv[1];
 			id = argv[2];
 			strcpy(ip ,argv[3]);
 			port_str = argv[4];
+		}else if (matches(argv[1],"peer") == 0)
+		{
+			dev = argv[0];
+			id = argv[2];
+			strcpy(ip,argv[3]);
+			port_str = argv[4];
+		}else
+		{
+			nw_peer_usage();
+			goto params_error;
 		}
 	}else if(argc == 3) //DEV ID IP
 	{
@@ -335,7 +346,7 @@ int nw_peer_add(int argc, char ** argv)
 		strcpy(ip,"0.0.0.0");
 	}else 
 	{
-		fprintf(stderr,"Error: [ %d ]  unexpected param nums.\n",argc);
+		nw_peer_usage();
 		goto param_nums_err;
 	}
 	if(!port_str)
@@ -343,17 +354,17 @@ int nw_peer_add(int argc, char ** argv)
 		port = 0;
 	}else if (get_unsigned16(&port,port_str,0))
 	{
-		fprintf(stderr,"Error:[ %s ] is not a valid port num.\n ",port_str);
+		
 		goto port_validate_failed;
 	}	
 	//add procedure.
 	if(!dev)
 	{
-		fprintf(stderr,"Error:not enough information:\"dev\" argument is required.\n");
+	
 		goto dev_is_required;
 	}else if (check_nw_if(dev))
 	{
-		fprintf(stderr,"Error:[ %s ] is not running.\n",dev);
+		
 		goto dev_is_exist;
 	}
 	else if(!is_exist(dev,id))
@@ -364,27 +375,45 @@ int nw_peer_add(int argc, char ** argv)
 		entry->count = 1;
 		if(nw_do_add(dev,entry) < 0)
 		{
-			goto peer_not_exist;
+			goto peer_add_failed;
 		}else 
 		{
-			printf("Success!\n");
 			goto success;
 		}
 	}else
 	{
-		fprintf(stderr,"Error :peerid [%s] is dulplicate.\n",id);
 		goto peerid_is_dulplicate;
 	}
 port_validate_failed:
+	fprintf(stderr,"Error:[ %s ] is not a valid port num.\n ",port_str);
+	free(entry);
+	return -1;
 peerid_is_dulplicate:
+	fprintf(stderr,"Error :peerid [%s] is dulplicate.\n",id);
+	free(entry);
+	return -1;
 dev_is_required:
+	fprintf(stderr,"Error:not enough information:\"dev\" argument is required.\n");
+	free(entry);
+	return -1;
 dev_is_exist:
-peer_not_exist:
+	fprintf(stderr,"Error:[ %s ] is not running.\n",dev);
+	free(entry);
+	return -1;
+peer_add_failed:
+	fprintf(stderr,"Error: ioctl peer add failed.\n");
+	free(entry);
+	return -1;
 params_error:
+	fprintf(stderr,"Error: unexpected params order.\n");
+	free(entry);
+	return -1;
 param_nums_err:
+	fprintf(stderr,"Error: [ %d ]  unexpected param nums.\n",argc);
 	free(entry);
 	return -1;
 success:
+	fprintf(stdout,"Success!\n");
 	free(entry);
 	return 0;
 }

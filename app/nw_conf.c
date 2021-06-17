@@ -459,7 +459,7 @@ static int nw_load_dev(struct nw_config *config)
 				assert(thisVal->string != NULL);
 				if((ret = check_netmask(thisVal->string)))
 				{
-					fprintf(stderr,"Error: %s:%s is not valid.\n",thisOpt->key,thisVal->string);
+					fprintf(stderr,"Error: %s : %s is not valid.\n",thisOpt->key,thisVal->string);
 					goto result;
 				}
 				ret = inet_pton(AF_INET,thisVal->string,&d.mask);
@@ -799,11 +799,6 @@ int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 	sprintf(dev_cmd,"ip link add %s type ngmwan",dev);
 	sprintf(dev_down,"ip link set %s down",dev);
 	sprintf(set_tx,"ip link set %s txqueuelen 1000",dev);
-	strcpy(ip_v4,ip_str);
-	//printf("%s",ip_v4);
-	//assert(check_ipv4( ip_v4 ) == 0);
-	strcpy(mask_str,netmask);
-	assert(check_netmask( mask_str )==0);
 	ret = system(dev_cmd);
 	if(ret)
 	{
@@ -822,13 +817,30 @@ int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 		fprintf(stderr,"Error:dev set txqueuelen failed.\n");
 		return -1;
 	}
-	if(strlen(ip_str))
+	if(strlen(ip_str)&&strlen(mask_str))
 	{
+		strcpy(ip_v4,ip_str);
+		printf("%s\n",ip_v4);
+		ret = check_ipv4(ip_v4);
+		if(ret)
+		{
+			fprintf(stderr,"Error:dev %s ip address invalid.\n",ip_v4);
+			return -1;
+		}
+		strcpy(mask_str,netmask);
+		ret = check_netmask(mask_str);
+		printf("%s\n",mask_str);
+		if(ret)
+		{
+			fprintf(stderr,"Error:dev %s net mask invalid.\n",mask_str);
+			return -1;
+		}
 		sprintf(ip_cmd,"ip addr add %s/%s dev %s ",ip_v4,mask_str,dev);
 		ret = system(ip_cmd);
 		if(ret)
 		{
 			fprintf(stderr,"Error:ip configuration failed.\n");
+			return -1;
 		}
 	}
 	return 0;
