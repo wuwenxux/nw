@@ -31,7 +31,14 @@
 #define CHECKERR               -22
 #define INVALID_ARG            -23
 
-
+typedef enum _nw_conf_err
+{
+    conf_ifname_error = 0,
+    conf_ip_invalid   ,
+    conf_mask_invalid ,
+    conf_dev_exist    ,
+    conf_port_invalid ,
+}nw_conf_err;
 /*nw ioctl
 #define NW_OTHER_CMD_ERR    "nw_set_cmd:"
 #define NW_COMM_SET         "set"

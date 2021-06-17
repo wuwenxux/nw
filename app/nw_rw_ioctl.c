@@ -233,7 +233,7 @@ int nw_ioctl(struct nw_oper_head *head)
 	sock = socket(AF_INET,SOCK_DGRAM,0);
     if(!sock)
     {
-		fprintf(stderr,"[%s] param error",__FUNCTION__);
+		fprintf(stderr,"[%s] param error\n",__FUNCTION__);
         return -1;
     }
     ret = ioctl(sock,NW_OPER,&req);
@@ -242,7 +242,7 @@ int nw_ioctl(struct nw_oper_head *head)
 		fprintf(stderr,"%s type:%d command:%d %s\n",req.ifr_name,head->type,head->command,strerror(errno));
 	}
 	close(sock);
-	return head->result;
+	return !head->result;
 }
 int nw_search_if( char *dev)
 {
@@ -302,7 +302,7 @@ void do_read(struct nw_oper_head *head)
 		{
 			maxid = maxid > strlen(entry->peerid[i]) ? maxid : strlen(entry->peerid[i]);
 		}
-		fprintf(stdout,"No. Id%-*sIP%-*sPort%-*s \n",maxid," ",15," ",5," ");
+		fprintf(stdout,"No. ID%-*sIP%-*sPort%-*s \n",maxid," ",15," ",5," ");
 		for(i = 0 ; i < entry->count ; i++)
 		{
 			//max = max > strlen(entry->peerid[i]) ? max : strlen(entry->peerid[i]);

@@ -26,8 +26,8 @@ int get_ip_mask(const char *dev,char *ip_str,char *mask)
         if (ifa->ifa_addr == NULL)
             continue;  
 
-		s=getnameinfo(ifa->ifa_addr,sizeof(struct sockaddr_in),ip_str, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
-        s=getnameinfo(ifa->ifa_netmask,sizeof(struct sockaddr_in),mask, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+		s = getnameinfo(ifa->ifa_addr,sizeof(struct sockaddr_in),ip_str, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+        s = getnameinfo(ifa->ifa_netmask,sizeof(struct sockaddr_in),mask, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
 		if((strcmp(ifa->ifa_name,dev)==0)&&(ifa->ifa_addr->sa_family==AF_INET))
         {
 			if(s != 0)
@@ -68,12 +68,12 @@ int check_nw_if(const char *str)
 			i = strtok(buf, ":");
 			if (i == NULL) {
 				pclose(fp);
-				return CMDERR;
+				return -1;
 			}
 			n = strtok(NULL, ":");
 			if (n == NULL) {
 				pclose(fp);
-				return CMDERR;
+				return -1;
 			}
 			if (strcmp(&n[1], str) == 0) {
 				pclose(fp);
@@ -81,9 +81,8 @@ int check_nw_if(const char *str)
 			}
 		}
 	}
-
 	pclose(fp);
-	/* not exist net device */
+	/* not found */
 	return DEV_NOT_FOUND;
 }
 int nw_mptcp(const char *str)
@@ -96,7 +95,7 @@ int nw_mptcp(const char *str)
 		return INVALID_ARG;
 	}
 	sprintf(cmd,"ip link show dev %s |grep -o NOMULTIPATH",str);
-	if ((fp=popen(cmd,"r")) == NULL) {
+	if ((fp = popen(cmd,"r")) == NULL) {
 		err(EXIT_FAILURE, "%s", cmd);
 		return CMDERR;
 	}
@@ -418,7 +417,15 @@ void trim(char *source_string, const char *trim_string)
 		}
 	}	
 	input_value_ptr[i+1] = '\0';
-	
- 
-	return;
+ 	return;
+}
+int nw_dev_on(const char *dev)
+{
+	assert(dev != NULL);
+	assert(check_ifname(dev) == 0);
+	int ret = -1;
+	char set_on_cmd[50];
+	sprintf(set_on_cmd,"ip link set %s up",dev);
+	ret = system(set_on_cmd);
+	return ret == 0 ? 0 : -1;
 }

@@ -97,8 +97,8 @@ int check_netmask(const char *ipmask_str);
 int get_ip_mask(const char *dev,char *ip_str,char *mask );
 /**
  * Whether a dev is a valid nw interface.
- * Note:Dev is not a running dev 
- * Return:if running return 0,else return -1 
+ * Note:Dev is not a ngmwan dev 
+ * Return:if exist return 0,else return -1 
  * @dev:a valid dev name
  * Note: name of dev must be valid.
  **/
@@ -110,6 +110,13 @@ int check_nw_if(const char *dev);
  * @dev:name of the device ,which can be found by ip link.
  **/
 int nw_mptcp(const char *dev);
+/**
+ * Make a dev on (show in ifconfig)
+ * Note: dev should be a effective name ,otherwise  DEVERR , CMDERR,-1 returned.
+ * Return: 0 SUCCESS -1 FAILED
+ * @dev:name of the device ,which can be found by ip link.
+ **/
+int nw_dev_on(const char*dev);
 /**
  *Trim a string with trim characters like "\'\" "
  *Note: option "hello" --> option hello
