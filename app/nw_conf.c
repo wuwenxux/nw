@@ -7,6 +7,25 @@
 #include <net/if.h>
 #include "nw_conf.h"
 #define trim_str " \'\""
+/**
+ * Remove all nw dev
+ **/
+static void nw_clear();
+
+/**
+ * Load a config to a dev
+ * Return :0 SUCCESS -1 FAIL
+ * @config:import the config object to set up a ngmwan interface.
+ */
+static int nw_load_dev(struct nw_config *config);
+
+/**
+ * Save one nw dev interface
+ * Return:0 success , -1 failure
+ *@fp:export one dev conf interface to fp
+ *@dev:conf of dev
+ **/
+static int nw_save_dev(FILE *fp,const char *dev);
 
 /**
  * Add a configuration of ngmwan and return nw_config object,like:config interface 'nwconf1';
@@ -54,7 +73,9 @@ struct nw_config* find_config(struct nw_file *file,const char *name);
  * @key:key of the option name
  **/
 struct nw_option* find_option(struct nw_config *name,const char *key);
+
 static int nw_load_dev(struct nw_config *);
+
 static void nw_dev_conf_export(FILE *,
                             const char *,
 							const char *,
@@ -66,6 +87,7 @@ static void nw_dev_conf_export(FILE *,
                             struct nw_self *,
 							struct nw_dhcp *,
 							struct nw_peer_entry **,int mptcp_on);
+
 struct nw_file *file_open(char *path)
 {
 	char *word = NULL;
@@ -175,6 +197,7 @@ int nw_reload_conf(char *path)
 		{
 			printf("Reloading %s...\n",dev);
 			ret = nw_load_dev(thisConf);
+			sleep(1);
 			if(ret)
 				goto fail;
 		}else
@@ -207,12 +230,14 @@ static int nw_load_dev(struct nw_config *config)
 	struct nw_other o;
 	struct nw_dhcp d;
 	struct nw_peer_entry *entry = calloc(1,sizeof(struct nw_peer_entry));
+
 	memset(&o,0,sizeof(struct nw_other));
 	memset(&s,0,sizeof(struct nw_self));
 	memset(&b,0,sizeof(struct nw_bind));
 	memset(&t,0,sizeof(struct nw_type));
 	memset(&p,0,sizeof(struct nw_ping));
-	memset(&d,0,sizeof(struct nw_ping));
+	memset(&d,0,sizeof(struct nw_dhcp));
+	
 	assert(config != NULL);
 	if(config == NULL)
 		return -1;
@@ -222,7 +247,6 @@ static int nw_load_dev(struct nw_config *config)
 	char ipaddr[16];
 	char netmask[16];
 	bool ping_set[2]= {false};
-	bool is_static = false;
 	char peer_id[MAX_PEERNAME_LENGTH];
 	u32 peer_ip;
 	u16 peer_port;
@@ -230,6 +254,7 @@ static int nw_load_dev(struct nw_config *config)
 	struct nw_config *thisConf = NULL;
 	struct nw_option *thisOpt = NULL;
 	struct nw_value *thisVal = NULL;
+	
 	thisConf = config;
 	thisOpt = thisConf->options;
 	thisOpt = thisConf->options;
@@ -245,8 +270,7 @@ static int nw_load_dev(struct nw_config *config)
 			}else if(strcmp(thisOpt->key,"ipaddr") == 0)
 			{
 				strcpy(ipaddr,thisVal->string);
-				is_static = true;
-			}else if(strcmp(thisOpt->key,"netmask") == 0)
+			}else if(strcmp(thisOpt->key,"netmask") == 0 || strcmp(thisOpt->key,"mask") == 0)
 			{
 				strcpy(netmask,thisVal->string);
 			}else if(strcmp(thisOpt->key,"mode") == 0)
@@ -365,9 +389,8 @@ static int nw_load_dev(struct nw_config *config)
 					ret = -1;
 					goto result;
 				}
-			}else if(strcmp(thisOpt->key,"swtichtimeout") ==0)
+			}else if(strcmp(thisOpt->key,"switchtime") == 0)
 			{
-				assert(get_unsigned32(&o.switchtime,thisVal->string,10)==0);
 				if(get_unsigned32(&o.switchtime,thisVal->string,10))
 				{
 					fprintf(stderr,"Error:\'%s\' param \'%s\':invalid switchtime value\n",thisConf->name,thisOpt->key);
@@ -377,7 +400,7 @@ static int nw_load_dev(struct nw_config *config)
 			}
 			else if(strcmp(thisOpt->key,"interval")==0)
 			{
-				assert(get_unsigned32(&o.switchtime,thisVal->string,10)==0);
+				assert(get_unsigned32(&p.interval,thisVal->string,10)==0);
 				if(get_unsigned32(&p.interval,thisVal->string,10))
 				{
 					fprintf(stderr,"Error:\'%s\' param \'%s\':not a valid unsigned int value\n",thisConf->name,thisOpt->key);
@@ -397,7 +420,7 @@ static int nw_load_dev(struct nw_config *config)
 				}
 				ping_set[1] = true;
 			}
-			else if(strcmp(thisOpt->key,"ownid")==0 && check_self(thisVal->string)== 0)
+			else if( strcmp(thisOpt->key,"ownid")== 0 && check_self(thisVal->string)== 0)
 			{	
 				strcpy(s.peerid,thisVal->string);
 			}else if(strcmp(thisOpt->key,"multipath") == 0 || strcmp(thisOpt->key,"mptcp") == 0)
@@ -405,8 +428,7 @@ static int nw_load_dev(struct nw_config *config)
 				if(strcmp(thisVal->string,"on") == 0)
 				{
 					set_mptcp = true;
-				}
-				else if(strcmp(thisVal->string,"off") == 0)
+				}else if(strcmp(thisVal->string,"off") == 0)
 				{ 
 					set_mptcp = false;
 				}else 
@@ -420,10 +442,8 @@ static int nw_load_dev(struct nw_config *config)
 				if(strcmp(thisVal->string,"yes") == 0)
 				{
 					strcpy(d.enable,"yes");
-					is_static = false;
 				}else if(strcmp(thisVal->string,"no") == 0)
 				{
-					is_static = true;
 					strcpy(d.enable,"no");
 				}else
 				{
@@ -483,15 +503,6 @@ static int nw_load_dev(struct nw_config *config)
 			fprintf(stderr,"Error:%s is invalid.\n",dev);
 			goto result;
 		}
-		if(is_static)
-		{
-			if( check_ipv4(ipaddr) || check_netmask(netmask))
-			{
-				ret = -1;
-				fprintf(stderr,"Error:dev %s: %s or %s is wrong, param error.\n",dev,ipaddr,netmask);
-				goto result;
-			}
-		}
 		if((ret = nw_setup_dev(dev,ipaddr,netmask)))
 		{
 			fprintf(stderr,"Error:setup %s failed\n",dev);
@@ -517,6 +528,10 @@ static int nw_load_dev(struct nw_config *config)
 				fprintf(stderr,"Error:%s interval shoule be smaller than timeout.\n",dev);
 				goto params_ping_err;
 			}
+		}else
+		{
+			fprintf(stderr,"Error:both interval and timeout of %s should be set.\n",dev);
+			goto params_ping_err;
 		}
 		if(b.port)
 		{
@@ -550,7 +565,7 @@ static int nw_load_dev(struct nw_config *config)
 		if(ret)
 		{
 			fprintf(stderr,"Error:%s start up failed.\n",dev);
-			return ret;
+			goto result;
 		}
 		fprintf(stdout,"Dev %s set up success.\n",dev);
 		memset(entry,0,sizeof(struct nw_peer_entry));
@@ -560,6 +575,8 @@ static int nw_load_dev(struct nw_config *config)
 		memset(&t,0,sizeof(struct nw_type));
 		memset(&p,0,sizeof(struct nw_ping));
 		memset(&d,0,sizeof(struct nw_dhcp));
+		memset(ipaddr,0,sizeof(16));
+		memset(netmask,0,sizeof(16));
 		ping_set[0] = false;
 		ping_set[1] = false;
 		set_mptcp = false;
@@ -591,6 +608,7 @@ int nw_load_conf(char *path)
 	{
 		ret = nw_load_dev(thisConf);
 		thisConf = thisConf->next;
+		sleep(1);
 	}
 	goto result;
 result:
@@ -637,7 +655,6 @@ int nw_save_conf(char *path)
 				goto result;
 			}
 			trim(dev,trim_str);
-			printf("%s\n",dev);
 			if(nw_save_dev(save_fp,dev))
 			{
 				ret = -1;
@@ -645,6 +662,7 @@ int nw_save_conf(char *path)
 				goto result;
 			}
 			sleep(1);
+			ret = 0;
 			printf("Config %s save success.\n",dev);
 		}
 	}
@@ -652,7 +670,7 @@ int nw_save_conf(char *path)
 popen_err:
 	if(fp != NULL)
 		pclose(fp);
-
+	return ret;
 result:
 	if(save_fp != NULL)
 		fclose(save_fp);
@@ -674,7 +692,6 @@ static int nw_save_dev(FILE *fp,const char *dev)
 	char ip[16];
 	char mask[16];
 	int on_off = 0;
-	//char *cmd = NULL;
 	struct nw_other o;
 	struct nw_bind  b;
 	struct nw_self  s;
@@ -682,7 +699,11 @@ static int nw_save_dev(FILE *fp,const char *dev)
 	struct nw_type  t;
 	struct nw_dhcp  d;
 	struct nw_peer_entry *npe = calloc(1,sizeof(struct nw_peer_entry));
-	assert(npe!= NULL);
+	if(npe == NULL)
+	{
+		fprintf(stderr,"malloc err.\n");
+		return -1;
+	}
 	if((ret = nw_other_read(dev,&o)))
 	{
 		perror("Nw other info read failure.\n");
@@ -724,9 +745,18 @@ static int nw_save_dev(FILE *fp,const char *dev)
 		perror("Failed to get dev ip and mask.\n");
 		goto result;
 	}
-	on_off = nw_mptcp(dev);
+	on_off = nw_mptcp_read(dev);
 	nw_dev_conf_export(fp,dev,ip,mask,&o,&b,&p,&t,&s,&d,&npe,on_off);
 	ret = 0;
+
+	memset(ip,0,16);
+	memset(mask,0,16);
+	memset(&o,0,sizeof(struct nw_other));
+	memset(&b,0,sizeof(struct nw_bind));
+	memset(&s,0,sizeof(struct nw_self));
+	memset(&p,0,sizeof(struct nw_ping));
+	memset(&t,0,sizeof(struct nw_type));
+	memset(&d,0,sizeof(struct nw_dhcp));
 	goto result;
 result:
 	free(npe);
@@ -827,7 +857,6 @@ int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 	if(strlen(ip_str))
 	{
 		strcpy(ip_v4,ip_str);
-		//printf("%s\n",ip_v4);
 		ret = check_ipv4(ip_v4);
 		if(ret)
 		{
@@ -836,7 +865,6 @@ int nw_setup_dev(const char *dev, char *ip_str, char *netmask)
 		}
 		strcpy(mask_str,netmask);
 		ret = check_netmask(mask_str);
-		//printf("%s\n",mask_str);
 		if(ret)
 		{
 			fprintf(stderr,"Error:dev %s net mask invalid.\n",mask_str);
@@ -1110,8 +1138,12 @@ static void nw_dev_conf_export(FILE *fp,
 
 	fprintf(fp,"config interface \'%s\'\n",dev);
 	fprintf(fp,"\toption ifname \'%s\'\n",dev);
-	fprintf(fp,"\toption ipaddr \'%s\'\n",ip_v4);
-	fprintf(fp,"\toption netmask \'%s\'\n",ip_mask);
+	if(t_ptr->mode == NW_MODE_SERVER  || strcmp(d_ptr->enable,"no") == 0 )
+	{
+		fprintf(fp,"\toption ipaddr \'%s\'\n",ip_v4);
+		fprintf(fp,"\toption netmask \'%s\'\n",ip_mask);	
+	}
+	fprintf(fp,"\toption mode \'%s\'\n",t_ptr->mode == NW_MODE_CLIENT ?"client":"server");
 	fprintf(fp,"\toption budget \'%u\'\n",o_ptr->budget);
 	fprintf(fp,"\toption idletimeout \'%u\'\n",o_ptr->idletimeout);
 	fprintf(fp,"\toption oneclient \'%s\'\n",o_ptr->oneclient);
@@ -1126,8 +1158,7 @@ static void nw_dev_conf_export(FILE *fp,
 	fprintf(fp,"\toption interval \'%u\'\n",p_ptr->interval);
 	fprintf(fp,"\toption timeout \'%u\'\n",p_ptr->timeout);
 	fprintf(fp,"\toption ownid \'%s\'\n",s_ptr->peerid);
-	fprintf(fp,"\toption mode \'%s\'\n",t_ptr->mode == NW_MODE_CLIENT ?"client":"server");
-	fprintf(fp,"\toption multipath \'%s\'\n",on_off == 0?"off":"on");
+	fprintf(fp,"\toption multipath \'%s\'\n",on_off == 0 ? "off":"on");
 	fprintf(fp,"\toption dhcp \'%s\'\n",d_ptr->enable);
 
 	if(t_ptr->mode == NW_MODE_SERVER)
@@ -1143,12 +1174,11 @@ static void nw_dev_conf_export(FILE *fp,
 			perror("inet_ntop dhcp_end error.\n");
 		}
 		fprintf(fp,"\toption dhcp-endip \'%s\'\n",d_ip_e);
-		
 		if(inet_ntop(AF_INET,&d_ptr->mask,d_ip_m,16) == NULL)
 		{
 			perror("inet_ntop dhcp_mask error.\n");
 		}
-		fprintf(fp,"\toption mask \'%s\'\n",d_ip_m);
+		fprintf(fp,"\toption dhcp-mask \'%s\'\n",d_ip_m);
 	}
 	for(i = 0; i < (*npe)->count; i++)
 	{
@@ -1159,5 +1189,6 @@ static void nw_dev_conf_export(FILE *fp,
 		fprintf(fp,"\toption peer \'%s,%s,%d\'\n",(*npe)->peerid[i],ip_v4,(*npe)->port[i]);
 	}
 	fprintf(fp,"\n");
+
 	return;
 }

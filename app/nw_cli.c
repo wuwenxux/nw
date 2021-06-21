@@ -472,8 +472,8 @@ int nw_dev_show(int argc, char **argv)
 		do_read(&ping.head);
 		ret = nw_self_read(dev,&self);
 		do_read(&self.head);
-		ret = nw_mptcp(dev);
-		fprintf(stdout,"multipath  	\t%-10s    \n",ret== 0?"off":"on");
+		ret = nw_mptcp_read(dev);
+		fprintf(stdout,"multipath  	\t%-10s    \n",ret == 0?"off":"on");
 		ret = nw_dhcp_read(dev,&dhcp);
 		if(type.mode == NW_MODE_SERVER)
 		{
@@ -486,7 +486,6 @@ int nw_dev_show(int argc, char **argv)
 	if(is_other(r_other,sizeof(r_other)/sizeof(r_other[0])))
 	{
 		ret = nw_other_read(dev,&other);
-		//do_read(&other.head);
 		other_print(&other,r_other,sizeof(r_other)/sizeof(r_other[0]));
 	}
 	if(r_type)
@@ -535,7 +534,7 @@ int nw_dev_show(int argc, char **argv)
 	}
 	if(mptcp)
 	{ 
-		ret = nw_mptcp(dev);
+		ret = nw_mptcp_read(dev);
 		fprintf(stdout,"multipath  \t%-10s    \n",ret== 0?"no":"yes");
 	}
 	if(r_dhcp)

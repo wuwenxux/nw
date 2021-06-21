@@ -109,7 +109,7 @@ int check_nw_if(const char *dev);
  * Return: 0 SUCCESS else DEVERR, CMDERR, -1 FAILED
  * @dev:name of the device ,which can be found by ip link.
  **/
-int nw_mptcp(const char *dev);
+int nw_mptcp_read(const char *dev);
 /**
  * Make a dev on (show in ifconfig)
  * Note: dev should be a effective name ,otherwise  DEVERR , CMDERR,-1 returned.

@@ -3,20 +3,7 @@
 #include "nw_err.h"
 #include "manage.h"
 #include <err.h>
-/*peer ioctl*/
-//dev connect peerid
-/*
-int nw_do_connect(const char *dev, struct nw_peer_entry *entry)
-{
-	int ret;
-	assert(dev != NULL);
-	assert(entry != NULL);
-	strcpy(entry->head.devname,dev);
-	entry->head.command = NW_COMM_SET;
-	entry->head.type = NW_COMM_PEER_CONNECT;
-	ret = nw_ioctl(&entry->head);
-	return ret;
-}*/
+
 //show dev peer
 int nw_do_peer_list(const char *dev ,struct nw_peer_entry *entry)
 {
@@ -201,10 +188,11 @@ int nw_dhcp_read(const char *dev,struct nw_dhcp *dhcp)
 	return ret;
 }
 
-int nw_mptcp_read(char *dev)
+int nw_mptcp_read(const char *dev)
 {
-	char mptcp_cmd[50];
-	sprintf(mptcp_cmd,"ip link show %s|grep -o NOMULTIPATH ",dev);
+	char mptcp_cmd[60];
+	//sprintf(mptcp_cmd,"ip link show %s | grep -o NOMULTIPATH ",dev);
+	sprintf(mptcp_cmd,"ip link show %s | grep -o NOMULTIPATH > /dev/null 2>&1",dev);
 	if(system(mptcp_cmd))
 	{
 		return -1;
@@ -214,7 +202,7 @@ int nw_mptcp_read(char *dev)
 int nw_mptcp_set(char *dev ,bool on_off)
 {
 	char mptcp_cmd[50];
-	sprintf(mptcp_cmd,"ip link set %s multipath %s",dev,on_off?"on":"off");
+	sprintf(mptcp_cmd,"ip link set %s multipath %s",dev, on_off ? "on" : "off");
 	if(system(mptcp_cmd))
 	{
 		fprintf(stderr,"multipath exec err.");

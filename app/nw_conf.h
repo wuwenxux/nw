@@ -5,7 +5,6 @@
 #include <string.h>
 #include <ctype.h>
 
-
 /**
  * Structures
  * Struct of a conf file(name, configs) 
@@ -104,29 +103,11 @@ int nw_setup_dev(const char *dev, char *ip,char *mask);
 void file_close(struct nw_file **file);
 
 /**
- * Remove all nw dev
- **/
-static void nw_clear();
-
-/**
- * Load a config to a dev
- * Return :0 SUCCESS -1 FAIL
- * @config:import the config object to set up a ngmwan interface.
- */
-static int nw_load_dev(struct nw_config *config);
-
-/**
  * Load conf
  * Return 0 success , -1 fail
  * @path: path to the conf file 
  **/ 
 int nw_load_conf(char *path);
 
-/**
- * Save one nw dev interface
- * Return:0 success , -1 failure
- *@fp:export one dev conf interface to fp
- *@dev:conf of dev
- **/
-static int nw_save_dev(FILE *fp,const char *dev);
+
 #endif
