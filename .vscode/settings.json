@@ -1,14 +1,8 @@
+
 {
     "C_Cpp.errorSquiggles": "Disabled",
     "files.associations": {
-        "cmath": "c",
-        "*.tcc": "cpp",
-        "string": "cpp",
-        "vector": "cpp",
-        "fstream": "cpp",
-        "limits": "cpp",
-        "sstream": "cpp",
-        "utility": "cpp",
-        "algorithm": "cpp"
+        "typeinfo": "cpp",
+        "cstdlib": "c"
     }
 }

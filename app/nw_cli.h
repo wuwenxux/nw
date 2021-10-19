@@ -105,8 +105,8 @@ void nw_show_usage();
 void nw_set_usage();
 /*other,type,ping,bind */
 /**
- * These funcs below just do two things :read and write configure of the ngmwan interface by ioctl.
- * All input values are supposed valid,if not  return -1.
+ * These funcs below just do two things :read and write configuration of the ngmwan interface by ioctl.
+ * All input values are supposed to be valid,if not  return -1.
  * Return: 0 Succeed ,-1 Failed
  * @dev: the device of this ngmwan interface
  * @other: the nw_other values of nw interface dev(refer to "mangage.h")
@@ -241,7 +241,7 @@ int nw_reload_conf(char *path);
 /**
  * Save a nw dev object to a config file which is compatiable with openwrt configuration format.
  * Dev should be a valid ngmwan interface. 
- * Return :only dev is enough.
+ * Return :path  is valid.
  * @dev:name of the device, which can be found throug ip link.
  **/
 int nw_save_conf(char *path);

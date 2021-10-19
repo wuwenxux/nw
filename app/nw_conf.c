@@ -389,7 +389,7 @@ static int nw_load_dev(struct nw_config *config)
 					ret = -1;
 					goto result;
 				}
-			}else if(strcmp(thisOpt->key,"switchtime") == 0)
+			}else if(strcmp(thisOpt->key,"switchtime") == 0 || strcmp(thisOpt->key,"swtichtime") == 0)
 			{
 				if(get_unsigned32(&o.switchtime,thisVal->string,10))
 				{
@@ -398,9 +398,8 @@ static int nw_load_dev(struct nw_config *config)
 					goto result;
 				}
 			}
-			else if(strcmp(thisOpt->key,"interval")==0)
+			else if( strcmp(thisOpt->key,"interval") == 0 )
 			{
-				assert(get_unsigned32(&p.interval,thisVal->string,10)==0);
 				if(get_unsigned32(&p.interval,thisVal->string,10))
 				{
 					fprintf(stderr,"Error:\'%s\' param \'%s\':not a valid unsigned int value\n",thisConf->name,thisOpt->key);
@@ -409,7 +408,7 @@ static int nw_load_dev(struct nw_config *config)
 				}
 				ping_set[0]= true;
 			}
-			else if(strcmp(thisOpt->key,"timeout")==0)
+			else if(strcmp(thisOpt->key,"timeout") == 0)
 			{
 				assert(get_unsigned32(&p.timeout,thisVal->string,10) == 0);
 				if(get_unsigned32(&p.timeout,thisVal->string,10))
@@ -452,7 +451,6 @@ static int nw_load_dev(struct nw_config *config)
 				}
 			}else if(strcmp(thisOpt->key,"dhcp-startip") == 0)
 			{
-				assert(thisVal->string != NULL);
 				if((ret = check_ipv4(thisVal->string)))
 				{
 					fprintf(stderr,"Error:%s is not a valid dhcp-ip addr.",thisVal->string);
@@ -466,7 +464,6 @@ static int nw_load_dev(struct nw_config *config)
 				}
 			}else if (strcmp(thisOpt->key,"dhcp-endip") == 0)
 			{
-				assert(thisVal->string != NULL);
 				if((ret = check_ipv4(thisVal->string)))
 				{
 					fprintf(stderr,"Error:%s is not a valid dhcp-ip addr.",thisVal->string);
@@ -891,7 +888,7 @@ static struct nw_config* add_config(struct nw_file *file,const char *name)
 	if(file == NULL || name == NULL)
 	{
 		fprintf(stderr,"Neither file nor name can be NULL.\n");
-		exit(EXIT_FAILURE);
+		return NULL;
 	}
 	if((thisConfig = find_config(file,name)) != NULL)
 	{
@@ -932,7 +929,7 @@ static struct nw_option* add_value(struct nw_option *thisOpt ,const char *value)
 	if(thisVal == NULL)
 	{
 		perror("struct value malloc error.\n");
-		exit(EXIT_FAILURE);
+		return NULL;
 	}
 	thisVal->string = malloc(strlen(value)+1);
 	
@@ -940,7 +937,7 @@ static struct nw_option* add_value(struct nw_option *thisOpt ,const char *value)
 	{
 		perror("char * value malloc error.\n");
 		free(thisOpt->values);
-		exit(EXIT_FAILURE);
+		return NULL;
 	}
 	memcpy(thisVal->string,value,strlen(value) + 1);
 	thisVal->next = NULL;
@@ -973,6 +970,7 @@ static struct nw_option* add_option(struct nw_config *conf,const char *key,const
 		return thisOpt;
 	}
 	thisOpt = malloc(sizeof(struct nw_option));
+	thisOpt->values = NULL;
 	//key assignment 
 	thisOpt->key = malloc(strlen(key)+1);
 	memcpy(thisOpt->key,key,strlen(key)+1);
